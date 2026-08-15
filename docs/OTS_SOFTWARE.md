@@ -43,6 +43,25 @@ Software the project depends on that is **not** declared in a dependency manifes
 | OTS-004 | eclipse-mosquitto | latest stable | Eclipse Foundation | MQTT broker for device messaging (planned) | Medium | Not yet deployed | Eclipse security advisories | Pin stable tag when adopted | Evaluating |
 | OTS-005 | nodered/node-red | latest stable | OpenJS Foundation | Automation flow editor (planned, optional) | Medium | Not yet deployed | Node-RED advisories | Pin stable tag when adopted | Evaluating |
 
-<!-- Risk note: every component here is Medium because each either runs with
-elevated privileges (Docker), parses untrusted LAN input (Home Assistant,
-Mosquitto), or is the trust root the others sit on (host OS). None is Low. -->
+### Risk Note
+
+Every component above is rated `Medium`, and none is `Low`. That is not score
+inflation — each one either runs with elevated privileges (Docker), parses
+untrusted input arriving from the LAN (Home Assistant, Mosquitto), or is the
+trust root the others sit on (the host OS). Per `SECURITY.md`'s "Threat
+Modeling Triggers," any of those positions puts a component at `Medium` or
+above on its own.
+
+No component is rated `High` today because the hub is not exposed to the public
+internet (NFR-005) and holds no third-party data. If either changes —
+particularly if Home Assistant becomes reachable from outside the LAN — Home
+Assistant and any broker in front of it move to `High`, and this inventory must
+be revisited in the same change.
+
+### Verification Caveat
+
+The Verification column above describes how each component's fitness *will* be
+established. Nothing has been deployed yet, so no entry is `Active` and none of
+the stated verification has actually been performed. Status moves from
+`Evaluating` to `Active` only once the component is running on the hub and its
+verification has been observed.

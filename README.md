@@ -24,9 +24,24 @@ Honest snapshot of what this repo covers today. This list grows as the project d
 - Records the platform decision: lightweight Linux base + Home Assistant
   Container (Docker), not Home Assistant OS.
 - Holds the operational runbook for running a laptop as an always-on hub.
+- Defines 12 requirements with acceptance criteria (`docs/PRODUCT_REQUIREMENTS.md`)
+  and tracks each to its verifying check (`docs/REQUIREMENTS_TRACEABILITY.md`).
+- Runs a real check suite with `bash scripts/run_tests.sh`: governance and
+  secret sweeps today, compose validation and a hub smoke check
+  (`scripts/smoke_check.sh`) once those exist.
 
 Not yet: an actual `docker-compose.yml`, provisioning scripts, or any device
-integrations. Those are tracked in `TODO.md`.
+integrations. **The MacBook has not been imaged yet**, so every requirement
+that depends on the running hub is unverified — see the gap log in
+`docs/TEST_PLAN.md`. Those are tracked in `TODO.md`.
+
+## Running the Checks
+
+```bash
+git submodule update --init --recursive   # constitution/ is a submodule
+bash scripts/run_tests.sh                 # full suite; host checks SKIP off-hub
+HUB_HOST=<hub-ip> bash scripts/run_tests.sh   # includes the hub smoke check
+```
 
 ## Getting Started
 
@@ -44,8 +59,8 @@ Provisioning steps live in `docs/SETUP.md`. High level:
 macbook-home-hub/
 ├── compose/         ← docker-compose stack (Home Assistant + companions) [planned]
 ├── config/          ← Home Assistant + service configuration [planned]
-├── scripts/         ← provisioning and maintenance helpers [planned]
-├── docs/            ← architecture, operations, ADRs, setup
+├── scripts/         ← run_tests.sh, smoke_check.sh; provisioning helpers [planned]
+├── docs/            ← architecture, operations, requirements, ADRs, setup
 └── constitution/    ← Eric's Engineering Constitution (git submodule)
 ```
 

@@ -1,8 +1,17 @@
 # Eric's Engineering Constitution Adoption Report
 
-Project: Project Name
+Project: macbook-home-hub
 
-Project path: `/home/claude/macbook-home-hub`
+Project path: `/home/eric/Repos/macbook-home-hub`
+
+> **Historical record.** This report describes the state at bootstrap time
+> (2026-08-15, constitution v1.42.2) and is not updated as the project
+> evolves. For current compliance, run
+> `bash constitution/scripts/check_compliance.sh`. The "Recommended Merge
+> Steps" and "Recommended Tool Setup" sections below were completed in the
+> follow-up session — see `CHANGELOG.md` and `docs/AGENT_HANDOFF.md`, with
+> the exception of `pre-commit install`, which remains outstanding in
+> `TODO.md`.
 
 Constitution source: `https://github.com/esanacore/engineering-constitution.git`
 
