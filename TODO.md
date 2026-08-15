@@ -73,6 +73,13 @@ Keep entries specific, actionable, and current.
 
 ## Tooling & Compliance
 
+- [ ] **Restore the traceability gate to blocking.** The step in
+      `.github/workflows/constitution-compliance.yml` is currently advisory
+      (`|| true`) because 10 of 12 requirements cannot be verified without the
+      hub. Once the gap log in `docs/TEST_PLAN.md` is empty, delete the
+      `|| true` and the step-summary block so the gate blocks again. This is a
+      documented deviation from the constitution template, not a permanent
+      choice.
 - [ ] Install and activate the pre-commit hooks on this machine:
       `pip install pre-commit && pre-commit install && pre-commit install --hook-type pre-push`.
       The config exists but the hooks are inactive, so the secrets sweep is
