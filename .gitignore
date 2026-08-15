@@ -1,0 +1,71 @@
+# Secrets and credentials
+#
+# This repository holds Home Assistant configuration, which sits one careless
+# `git add` away from committing device tokens, API keys, and the HA backup
+# encryption key. Everything below stays out of version control.
+
+# Environment files (the .example/.sample variants are intentionally tracked)
+.env
+.env.*
+!.env.example
+!.env.sample
+!.env.template
+
+# Certificates and private keys
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+
+# SSH private keys
+id_rsa
+id_dsa
+id_ecdsa
+id_ed25519
+.ssh/
+
+# Cloud / service credentials
+credentials.json
+service-account.json
+service_account.json
+.netrc
+
+# Terraform state (may embed provider credentials)
+*.tfstate
+*.tfstate.*
+.terraform/
+
+# --- Home Assistant runtime state ---
+#
+# HA rewrites these constantly and they contain secrets, tokens, and device
+# state. Only the hand-authored YAML under config/ belongs in git.
+config/secrets.yaml
+config/.storage/
+config/.cloud/
+config/home-assistant_v2.db*
+config/home-assistant.log*
+config/tts/
+config/deps/
+config/backups/
+config/.uuid
+config/known_devices.yaml
+config/ip_bans.yaml
+
+# Home Assistant backups (tar archives may contain the full config, secrets
+# included). Keep these off the hub and out of git — see docs/OPERATIONS.md.
+*.tar.gz
+backups/
+
+# --- Editors and OS noise ---
+.DS_Store
+Thumbs.db
+*.swp
+*~
+.idea/
+.vscode/
+
+# --- Tooling ---
+.pre-commit-cache/
+__pycache__/
+*.pyc

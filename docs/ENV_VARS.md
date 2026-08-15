@@ -1,23 +1,56 @@
 # Environment & Configuration Contract
 
-This document lists all environment variables required or optionally supported by this project.
-It acts as the single source of truth for configuration parameters across development, staging, and production environments.
+This document lists all environment variables required or optionally supported
+by this project. It acts as the single source of truth for configuration
+parameters.
 
 > [!IMPORTANT]
-> If you add a new environment variable to a manifest (like `.env.example` or `docker-compose.yml`), you **must** document it in this file in the same pull request.
+> If you add a new environment variable to a manifest (like `.env.example` or
+> `docker-compose.yml`), you **must** document it in this file in the same pull
+> request. `constitution/scripts/check_env_vars.sh` cross-checks root-level
+> manifests against this document.
+
+## Current State
+
+**This project declares no environment variables yet.**
+
+There is no `.env`, no `.env.example`, and no `compose/docker-compose.yml` —
+the compose stack is still an open item in `TODO.md`. `check_env_vars.sh`
+currently reports "no declared environment variables found," and that is the
+correct answer rather than an oversight.
 
 ## Required Variables
 
-These variables must be set for the application to start or build correctly.
-
-| Variable | Description | Example Value |
-| :--- | :--- | :--- |
-| `NODE_ENV` | (Example) The runtime environment | `development`, `production` |
+None yet.
 
 ## Optional Variables
 
-These variables have safe defaults or toggle non-critical features.
+None yet.
 
-| Variable | Description | Default Value | Example Value |
-| :--- | :--- | :--- | :--- |
-| `LOG_LEVEL` | (Example) The verbosity of system logs | `info` | `debug` |
+## Anticipated Variables
+
+These are **not yet in effect**. They are recorded here so the compose file and
+this document can be written together rather than drifting apart, and so the
+secret-handling decision is made before a secret exists.
+
+| Variable | Purpose | Sensitive | Notes |
+| --- | --- | --- | --- |
+| `TZ` | Container timezone; keeps automation schedules and log timestamps aligned with local time | No | Home Assistant automations are time-driven, so a wrong `TZ` produces silently wrong behavior rather than an error |
+| `HA_CONFIG_PATH` | Host path bind-mounted to the Home Assistant config directory | No | Defaults to `./config`; lets the stack be relocated without editing the compose file |
+| `PUID` / `PGID` | Ownership of bind-mounted config files | No | Prevents root-owned files appearing in the working tree |
+| `MQTT_USERNAME` | Mosquitto broker account, if MQTT is adopted | No | Pairs with `MQTT_PASSWORD` |
+| `MQTT_PASSWORD` | Mosquitto broker credential | **Yes** | Must come from an untracked `.env`, never a committed compose file |
+
+## Secret Handling
+
+Rules that apply the moment the first sensitive value above becomes real:
+
+- Secrets live in `.env`, which is gitignored. `.env.example` is committed and
+  holds **placeholder values only** — never a working credential.
+- Home Assistant's own secrets belong in `config/secrets.yaml`, which is
+  gitignored, and are referenced from tracked YAML with `!secret`.
+- The Home Assistant backup encryption key is stored **off the hub**. A backup
+  encrypted with a key that only exists on the machine the backup protects is
+  not a backup. See `docs/OPERATIONS.md`.
+- `constitution/scripts/check_secrets.sh` runs as a pre-push hook and sweeps
+  for credential-shaped filenames and content patterns.

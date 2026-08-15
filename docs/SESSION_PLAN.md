@@ -4,41 +4,35 @@ This document records the current session's planned work before implementation b
 
 **This file is overwritten at the start of each session.** Before overwriting, ensure the previous session's outcomes are captured in `AGENT_HANDOFF.md` or commit messages.
 
+## Status: no session in progress
+
+The last session (2026-08-15 — constitution compliance pass) completed. Its
+outcome is recorded in `docs/AGENT_HANDOFF.md` and `CHANGELOG.md`; its
+follow-up work is in `TODO.md`.
+
+The next agent should overwrite the sections below.
+
 ## Session
 
-- **Date/Time**: <!-- e.g. 2026-07-11 14:30 UTC -->
-- **Agent**: <!-- e.g. Claude, Copilot, Antigravity, human -->
-- **Previous Session**: <!-- Was a previous session interrupted? If so, summarize what it left behind. -->
+- **Date/Time**: not started
+- **Agent**: not started
+- **Previous Session**: 2026-08-15, completed cleanly. See
+  `docs/AGENT_HANDOFF.md` for what was left pending — chiefly that no
+  hardware provisioning has happened and every host-dependent requirement
+  remains unverified.
 
 ## Goal
 
-<!-- What does this session aim to accomplish? Be specific. -->
+Not started.
 
 ## Approach
 
-<!-- High-level steps, in order. -->
-
-1. <!-- Step 1 -->
-2. <!-- Step 2 -->
-3. <!-- Step 3 -->
+Not started.
 
 ## Files Expected to Change
 
-<!-- List the files this session plans to create, modify, or delete. -->
+Not started.
 
-- <!-- file path — create / modify / delete -->
+## Verification
 
-## Risks and Dependencies
-
-<!-- Anything that could block or complicate the work. -->
-
-- <!-- e.g. "Requires network access for dependency install" -->
-- <!-- e.g. "Changes to X depend on completing Y first" -->
-
-## Resumption Notes
-
-<!-- If this session is resumed after a crash, what should the next agent know? Update this section as work progresses. -->
-
-- **Last completed step**: <!-- e.g. "Finished step 2, starting step 3" -->
-- **Uncommitted changes**: <!-- e.g. "Modified foo.py and bar.js, not yet committed" -->
-- **Known issues**: <!-- e.g. "Tests in test_foo.py are failing due to incomplete refactor" -->
+Not started.

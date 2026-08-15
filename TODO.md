@@ -39,15 +39,51 @@ Keep entries specific, actionable, and current.
 
 ## Testing
 
-- [ ] Define what "tests" mean for a config repo: a smoke check that the
-      compose stack comes up and HA answers on `:8123` (declare in
-      `docs/TEST_PLAN.md`).
+- [x] Define what "tests" mean for a config repo — declared in
+      `docs/TEST_PLAN.md`, implemented as `scripts/run_tests.sh` (static +
+      config tiers) and `scripts/smoke_check.sh` (host tier).
+- [ ] Execute `scripts/smoke_check.sh` against the real hub. It is written but
+      has never run against hardware, so FR-002 stays a gap (GAP-002).
+- [ ] Close GAP-001: verify the host stays reachable 30+ min with the lid
+      closed (FR-001).
+- [ ] Close GAP-003: verify the stack returns unattended after `sudo reboot`
+      (FR-003).
+- [ ] Close GAP-004: author `compose/docker-compose.yml` so the compose tier
+      of the suite stops skipping (FR-004).
+- [ ] Close GAP-005: perform a real restore from backup onto a clean target
+      (FR-007). An untested restore is not a backup.
+- [ ] Close GAP-006: pull mains power for 10 minutes and confirm the hub keeps
+      serving on battery (NFR-002).
+- [ ] Close GAP-007: measure steady-state memory under real automation load
+      and record the baseline (NFR-003).
+- [ ] Close GAP-008: confirm no router port-forward exposes `:8123` or `:22`
+      (NFR-005).
 
 ## Documentation
 
-- [ ] Fill `docs/SETUP.md` with the concrete step-by-step install once the
-      first real provisioning run is done (capture actual commands, not
-      assumptions).
+- [ ] Replace `docs/SETUP.md` Part 2 (currently marked **unverified**) with
+      the commands actually typed during the first real provisioning run, not
+      the anticipated ones.
+- [ ] Rewrite the **(anticipated)** entries in `docs/TROUBLESHOOTING.md` with
+      observed symptoms once the machine has been through a real install.
+- [ ] Record the battery charge-limit finding in `docs/OPERATIONS.md` once
+      checked (either way — confirming its absence is a valid result).
+- [ ] Move `docs/OTS_SOFTWARE.md` entries from `Evaluating` to `Active` as
+      each component is actually deployed and its verification observed.
+
+## Tooling & Compliance
+
+- [ ] Install and activate the pre-commit hooks on this machine:
+      `pip install pre-commit && pre-commit install && pre-commit install --hook-type pre-push`.
+      The config exists but the hooks are inactive, so the secrets sweep is
+      not currently enforced on push.
+- [ ] Enable branch protection and "Automatically delete head branches" in the
+      hosting platform settings (see `constitution/INTEGRATION.md`,
+      "Repository Settings Checklist"). Not yet done.
+- [ ] Run `/setup-gbrain` once in this repository to initialize the gstack
+      project brain.
+- [ ] Decide whether to keep `.constitution-bootstrap/` now that adoption is
+      complete, or delete it as the report itself suggests.
 
 ## Nice-to-Have
 
