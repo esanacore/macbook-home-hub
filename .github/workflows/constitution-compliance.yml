@@ -44,45 +44,32 @@ jobs:
         shell: bash
         run: bash constitution/scripts/check_compliance.sh .
 
-      # PROJECT-LOCAL DEVIATION from the constitution template: this step is
-      # advisory (reports, never fails) instead of blocking.
+      # This gate is BLOCKING, as the constitution template intends. It was
+      # briefly advisory (commit 7be4dc3) while every requirement in the
+      # document was hardware-blocked; that accommodation has been removed.
       #
-      # Why: the hub hardware has not been provisioned. Ten of twelve
-      # requirements describe behavior of a machine that does not exist yet, so
-      # they cannot have an executed verifying test no matter how much work is
-      # done in this repository. Blocking here would leave every pull request
-      # red for as long as procurement takes, which does not add rigor -- it
-      # trains readers to ignore CI, and a genuine regression in one of the
-      # seven other gates would be lost in the noise.
+      # It now gates the *active* requirements in docs/PRODUCT_REQUIREMENTS.md
+      # -- those declared with a bold ID. Requirements that genuinely cannot be
+      # verified yet live in that file's Deferred section with backticked IDs
+      # and are outside the gate by design, with their reason, gap-log entry,
+      # and promotion path recorded alongside them.
       #
-      # The gaps are not hidden: they are enumerated as GAP-001..GAP-008 in
-      # docs/TEST_PLAN.md, tracked in TODO.md, and printed in full by the step
-      # below on every run.
+      # The deferred set is not hidden: check_traceability.sh prints every one
+      # of them under "matrix rows with no matching declared requirement" on
+      # every run, and they are enumerated as GAP-001..GAP-008 in
+      # docs/TEST_PLAN.md.
       #
-      # RESTORE THIS TO BLOCKING once the gap log in docs/TEST_PLAN.md is
-      # empty -- delete the `|| true` and the summary block. Tracked in TODO.md
-      # under "Tooling & Compliance". This is a temporary accommodation for a
-      # repository whose subject does not physically exist yet, not a decision
-      # that traceability is optional here.
-      - name: Verify requirements traceability (advisory until hardware exists)
+      # The safety property this preserves: promoting a requirement into the
+      # gate without a verifying test fails CI. Do not resolve a failure here
+      # by moving a requirement back to Deferred -- deferral means "cannot be
+      # checked yet", not "the check is inconvenient".
+      - name: Verify requirements traceability (product-facing repositories)
         shell: bash
         run: |
-          set -uo pipefail
+          set -euo pipefail
           if [ -f docs/PRODUCT_REQUIREMENTS.md ] && [ -f docs/REQUIREMENTS_TRACEABILITY.md ]; then
             bash constitution/scripts/check_traceability.sh \
-              docs/PRODUCT_REQUIREMENTS.md docs/REQUIREMENTS_TRACEABILITY.md \
-              | tee /tmp/traceability.txt || true
-            {
-              echo "### Requirements traceability (advisory)"
-              echo
-              echo "This gate is intentionally non-blocking while the hub hardware"
-              echo "does not exist. See the comment in this workflow and the gap log"
-              echo "in \`docs/TEST_PLAN.md\`."
-              echo
-              echo '```'
-              tail -1 /tmp/traceability.txt
-              echo '```'
-            } >> "$GITHUB_STEP_SUMMARY"
+              docs/PRODUCT_REQUIREMENTS.md docs/REQUIREMENTS_TRACEABILITY.md
           else
             echo "::notice::No product requirements/traceability documents found; skipping the traceability gate."
           fi

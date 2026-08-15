@@ -19,6 +19,16 @@ This project follows semantic versioning.
 
 ### Changed
 
+- The requirements-traceability CI gate is **blocking again**, reverting the
+  temporary advisory accommodation added in `7be4dc3`. Instead of waiting for
+  the gap log to empty, `docs/PRODUCT_REQUIREMENTS.md` now separates **Active**
+  requirements (bold IDs — gated, and each has a check that has actually run)
+  from **Deferred** ones (backticked IDs — outside the gate because they cannot
+  be verified until the hub exists). Deferred requirements keep their full
+  text, acceptance criteria, matrix rows, gap-log entries, and TODO items, and
+  `check_traceability.sh` prints every one of them on each run. Promoting a
+  requirement to Active without a verifying test fails CI — the safety property
+  the gate exists to provide.
 - Filled `docs/adr/0001-record-architecture-decisions.md` (was the unfilled
   template). Now an Accepted ADR recording the decision to use ADRs, with
   ADR-0002 noted as Related.

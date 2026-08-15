@@ -29,19 +29,27 @@ A requirement with no verifying test is a coverage gap. It is recorded in
 
 The hub hardware has not been provisioned yet. Ten of twelve requirements
 describe behavior of a machine that does not exist, so they have no *executed*
-verifying test. `constitution/scripts/check_traceability.sh` reports exactly
-those ten, and that report is correct.
+verifying test.
 
-Two of the ten (FR-002, FR-004) do have a check written — `smoke_check.sh` and
-the compose tier of `run_tests.sh` — but neither has ever run against real
-hardware. They are still counted as gaps, deliberately. A check that has never
-executed has proven nothing, and the checker's "GAP" verdict on them is the
-honest one.
+Those ten are **Deferred** in `docs/PRODUCT_REQUIREMENTS.md` — their IDs are
+backticked rather than bold, which places them outside the blocking CI gate.
+They keep their rows below, their gap-log entries in `docs/TEST_PLAN.md`, and
+their items in `TODO.md`. `check_traceability.sh` lists every one of them on
+each run under "matrix rows with no matching declared requirement," so the
+deferred set is printed in CI rather than hidden by it.
+
+Two of the ten (`FR-002`, `FR-004`) do have a check *written* —
+`smoke_check.sh` and the compose tier of `run_tests.sh` — but neither has ever
+run to completion against real hardware. They are still deferred, deliberately.
+A check that has never executed has proven nothing.
 
 The temptation is to name a planned script in the Verifying Tests column to
 turn the report green. That would make the matrix lie about what has been
-verified, which is the one thing this document exists to prevent. Gaps stay
-gaps until a check actually runs and passes.
+verified, which is the one thing this document exists to prevent. A requirement
+becomes Active only when a check has actually run and passed.
+
+Status values below are unchanged by deferral: `Not Started` means not started,
+whether or not the requirement is currently gated.
 
 ## Functional Requirements
 
@@ -76,6 +84,8 @@ gaps until a check actually runs and passes.
 | Deferred | 2 |
 | Requirements without an executed verifying test (gaps) | 10 |
 | — of which a check is written but unproven | 2 (FR-002, FR-004) |
+| Active (gated by blocking CI) | 2 (NFR-001, NFR-004) |
+| Deferred (outside the gate, blocked on hardware) | 10 |
 
 `MUST` requirements: 8 total (FR-001, FR-002, FR-003, FR-004, FR-007,
 NFR-001, NFR-002, NFR-004), of which 2 are verified (NFR-001, NFR-004) and 6

@@ -112,11 +112,16 @@ Every requirement ID maps to its verifying check in
 gaps and appear in the gap log above.
 
 Current state: 12 requirements, 2 with an executed verifying check (NFR-001,
-NFR-004), 10 gaps. Two of those gaps (FR-002, FR-004) have a check written but
-never executed — counted as gaps on purpose, because an unexecuted check has
-proven nothing.
+NFR-004), 10 gaps. Two of those gaps (`FR-002`, `FR-004`) have a check written
+but never executed — counted as gaps on purpose, because an unexecuted check
+has proven nothing.
 
-`constitution/scripts/check_traceability.sh` reports those 10. That report is
-accurate and expected, not a tooling failure. It goes quiet as the hub is
-built, and `scripts/run_tests.sh` runs it as advisory until then rather than
-failing the suite on a state that cannot currently be improved.
+The 10 gapped requirements are **Deferred** in `docs/PRODUCT_REQUIREMENTS.md`
+(backticked IDs), which places them outside the blocking CI gate while keeping
+them fully documented here and in the matrix. The 2 verified ones are
+**Active** and gated: CI fails if either loses its verifying test, or if a new
+requirement is promoted to Active without one.
+
+`constitution/scripts/check_traceability.sh` prints the deferred set on every
+run under "matrix rows with no matching declared requirement," so the gap
+count stays visible in CI output rather than being suppressed by it.
