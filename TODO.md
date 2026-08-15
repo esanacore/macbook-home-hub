@@ -18,8 +18,10 @@ Keep entries specific, actionable, and current.
 ## Services (stack)
 
 - [ ] Install Docker Engine + Compose plugin.
-- [ ] Author `compose/docker-compose.yml` with Home Assistant Container,
-      pinned to a dated stable image tag; bind-mount `config/`.
+- [x] Author `compose/docker-compose.yml` with Home Assistant Container,
+      pinned to a dated stable image tag (`2026.8.0`); bind-mount `config/`.
+      File exists; `docker compose config` validation still pending Docker
+      being installed (GAP-004 stays open until then).
 - [ ] Bring HA up, complete onboarding, confirm reachable at `:8123`.
 - [ ] Decide whether Mosquitto (MQTT) is needed based on chosen devices; add
       container if so.
@@ -80,17 +82,17 @@ Keep entries specific, actionable, and current.
       `|| true` and the step-summary block so the gate blocks again. This is a
       documented deviation from the constitution template, not a permanent
       choice.
-- [ ] Install and activate the pre-commit hooks on this machine:
-      `pip install pre-commit && pre-commit install && pre-commit install --hook-type pre-push`.
-      The config exists but the hooks are inactive, so the secrets sweep is
-      not currently enforced on push.
+- [x] Install and activate the pre-commit hooks on this machine
+      (`uv tool install pre-commit && pre-commit install && pre-commit install --hook-type pre-push`).
+      Hooks installed 2026-08-15; `pre-commit run --all-files` passes clean.
 - [ ] Enable branch protection and "Automatically delete head branches" in the
       hosting platform settings (see `constitution/INTEGRATION.md`,
       "Repository Settings Checklist"). Not yet done.
 - [ ] Run `/setup-gbrain` once in this repository to initialize the gstack
       project brain.
-- [ ] Decide whether to keep `.constitution-bootstrap/` now that adoption is
-      complete, or delete it as the report itself suggests.
+- [x] Delete `.constitution-bootstrap/` — adoption is complete; the directory
+      is not read by any parent-repo script and `bootstrap.sh` recreates it if
+      ever needed. Done 2026-08-15.
 
 ## Nice-to-Have
 

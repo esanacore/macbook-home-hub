@@ -4,9 +4,9 @@ This file provides help for humans and AI agents working on this project.
 
 ## For Humans
 
-- **Primary Maintainers**: <!-- Add names or team here -->
+- **Primary Maintainers**: Eric Sanacore
 - **Getting Started**: Read `README.md` and `docs/SETUP.md`.
-- **Asking for Help**: <!-- Add Slack channel, email, or issue tracker link here -->
+- **Asking for Help**: Open an issue on [github.com/esanacore/macbook-home-hub](https://github.com/esanacore/macbook-home-hub/issues).
 
 ## Using This Project in Your IDE
 

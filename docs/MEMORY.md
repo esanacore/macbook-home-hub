@@ -7,7 +7,7 @@ This file contains durable memories, codebase learnings, user preferences, and k
 
 ## User Preferences & Styling Choices
 
-<!-- 
+<!--
   Record the user's development preferences, styling decisions, and custom choices.
   Examples:
   - "User prefers TailwindCSS for styling, styled-components for theme overrides."
@@ -22,7 +22,7 @@ This file contains durable memories, codebase learnings, user preferences, and k
 
 ## Codebase Learnings & Gotchas
 
-<!-- 
+<!--
   Record critical codebase quirks, system anomalies, test runner behaviors, or API gotchas.
   Examples:
   - "Database port must be forwarded to localhost:5432 during integration tests."
@@ -47,7 +47,7 @@ This file contains durable memories, codebase learnings, user preferences, and k
 
 ## Active Project Decisions
 
-<!-- 
+<!--
   Record major technical and architectural decisions approved by the user that govern current work.
   Examples:
   - "Approved using SQLite for local development and PostgreSQL for production."

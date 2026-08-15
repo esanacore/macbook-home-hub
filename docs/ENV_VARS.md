@@ -12,30 +12,31 @@ parameters.
 
 ## Current State
 
-**This project declares no environment variables yet.**
-
-There is no `.env`, no `.env.example`, and no `compose/docker-compose.yml` —
-the compose stack is still an open item in `TODO.md`. `check_env_vars.sh`
-currently reports "no declared environment variables found," and that is the
-correct answer rather than an oversight.
+The compose stack lives at `compose/docker-compose.yml` and declares one
+environment variable (`TZ`). `constitution/scripts/check_env_vars.sh` only
+reads **root-level** `docker-compose.yml`, so it still reports "no declared
+environment variables found" for this repo — that is a tooling limitation,
+not an oversight. The variables below are documented here for human accuracy
+and stay in sync with the compose file by hand.
 
 ## Required Variables
 
-None yet.
+None — the compose file uses no mandatory variables.
 
 ## Optional Variables
 
-None yet.
+| Variable | Purpose | Sensitive | Notes |
+| --- | --- | --- | --- |
+| `TZ` | Container timezone; keeps automation schedules and log timestamps aligned with local time | No | Home Assistant automations are time-driven, so a wrong `TZ` produces silently wrong behavior rather than an error. Currently set to `America/Los_Angeles` in `compose/docker-compose.yml`; edit to your local timezone. |
 
 ## Anticipated Variables
 
 These are **not yet in effect**. They are recorded here so the compose file and
-this document can be written together rather than drifting apart, and so the
-secret-handling decision is made before a secret exists.
+this document can drift together rather than apart, and so the secret-handling
+decision is made before a secret exists.
 
 | Variable | Purpose | Sensitive | Notes |
 | --- | --- | --- | --- |
-| `TZ` | Container timezone; keeps automation schedules and log timestamps aligned with local time | No | Home Assistant automations are time-driven, so a wrong `TZ` produces silently wrong behavior rather than an error |
 | `HA_CONFIG_PATH` | Host path bind-mounted to the Home Assistant config directory | No | Defaults to `./config`; lets the stack be relocated without editing the compose file |
 | `PUID` / `PGID` | Ownership of bind-mounted config files | No | Prevents root-owned files appearing in the working tree |
 | `MQTT_USERNAME` | Mosquitto broker account, if MQTT is adopted | No | Pairs with `MQTT_PASSWORD` |

@@ -8,6 +8,54 @@ This project follows semantic versioning.
 
 ### Added
 
+- `compose/docker-compose.yml` declaring the Home Assistant container with a
+  pinned dated image tag (`ghcr.io/home-assistant/home-assistant:2026.8.0`),
+  `unless-stopped` restart policy, host networking, and a `./config` bind
+  mount. Companions (Mosquitto, Node-RED) are deliberately absent — they are
+  Deferred in `docs/REQUIREMENTS_TRACEABILITY.md` until adoption is decided.
+  The compose tier of the test suite now finds the file; `docker compose
+  config` validation still requires Docker to be installed (GAP-004 stays
+  open until then).
+
+### Changed
+
+- Filled `docs/adr/0001-record-architecture-decisions.md` (was the unfilled
+  template). Now an Accepted ADR recording the decision to use ADRs, with
+  ADR-0002 noted as Related.
+- Filled `docs/AGENT_PROMPTS.md` with six project-real prompts (provision,
+  smoke check, restore drill, ADR drafting, constitution review, stack bring
+  up); was template boilerplate.
+- Filled `docs/HELP.md` Primary Maintainers and Asking for Help placeholders.
+- `docs/OTS_SOFTWARE.md` OTS-003 version updated from `stable (pinned tag
+  once deployed)` to `2026.8.0`, with the update policy note pointing at
+  `compose/docker-compose.yml`. Status stays `Evaluating` until the component
+  is observed running on the hub.
+- `docs/ENV_VARS.md` `TZ` promoted from Anticipated to Optional Variables
+  (now declared in the compose file). `HA_CONFIG_PATH`, `PUID`, `PGID`, and
+  the MQTT pair stay Anticipated.
+- `.devcontainer/devcontainer.json` no longer installs the Node feature —
+  this repo has no JavaScript.
+
+### Removed
+
+- `docs/MVP_BACKLOG.md` — not in the constitution compliance list and carried
+  only stale template milestones.
+- `.constitution-bootstrap/` — adoption complete. Not read by any
+  parent-repo script; `constitution/scripts/bootstrap.sh` recreates it if
+  ever rerun.
+
+### Fixed
+
+- pre-commit hooks installed and active (`pre-commit install` plus
+  `pre-commit install --hook-type pre-push` for the secrets sweep). First
+  `pre-commit run --all-files` trimmed trailing whitespace and normalized
+  end-of-file on `CLAUDE.md`, `docs/MEMORY.md`, `docs/AGENT_PROMPTS.md`, and
+  `docs/adr/0001-record-architecture-decisions.md`.
+
+## [0.1.0] - 2026-08-15
+
+### Added
+
 - Initial changelog.
 - Repository initialized and bootstrapped with Eric's Engineering Constitution
   (constitution submodule, governance files, CI workflows, doc templates).

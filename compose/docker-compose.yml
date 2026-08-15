@@ -1,0 +1,23 @@
+# docker-compose stack for the macbook-home-hub.
+#
+# Source of truth for the running hub. Image is pinned to a dated tag, never
+# `latest`, per FR-004-AC-2. Companions (Mosquitto, Node-RED) are Deferred per
+# docs/REQUIREMENTS_TRACEABILITY.md and are deliberately absent here until a
+# decision is made to adopt them.
+#
+# Validate offline without starting anything:
+#   docker compose -f compose/docker-compose.yml config --quiet
+#
+# See docs/OPERATIONS.md for the bind-mount ownership and lid-switch posture
+# this stack assumes.
+
+services:
+  home-assistant:
+    image: ghcr.io/home-assistant/home-assistant:2026.8.0
+    container_name: home-assistant
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ./config:/config
+    environment:
+      TZ: America/Los_Angeles
