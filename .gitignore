@@ -69,3 +69,7 @@ Thumbs.db
 .pre-commit-cache/
 __pycache__/
 *.pyc
+
+# gbrain smoke-test artifacts (created in CWD by /setup-gbrain's put_page
+# smoke test — not source, just a verification scratch file)
+setup-gbrain-smoke-test-*.md

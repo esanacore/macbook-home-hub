@@ -16,6 +16,21 @@ This project follows semantic versioning.
   The compose tier of the test suite now finds the file; `docker compose
   config` validation still requires Docker to be installed (GAP-004 stays
   open until then).
+- gstack gbrain initialized for this repo: Supabase engine (project
+  `yvamohixcwjchhxufrcm`, us-west-1), MCP registered at user scope, repo
+  policy read-write. `CLAUDE.md` carries the `## GBrain Configuration` and
+  `## GBrain Search Guidance` blocks. The Supabase DB password and pooler
+  URL live only in `~/.gbrain/config.json` (mode 0600), never in this repo.
+- `scripts/check_gbrain_state.sh` — detects drift between the
+  `## GBrain Configuration` block in `CLAUDE.md` and the actual machine state
+  (gbrain installed? MCP registered? config file present?). Catches the
+  cross-machine-clone staleness risk where a CLAUDE.md committed on machine A
+  claims gbrain is configured, but machine B has no gbrain. Wired into
+  `scripts/run_tests.sh` as a static-tier check.
+- `scripts/test_check_gbrain_state.sh` — unit tests for the staleness checker
+  covering five fixture states: in-sync, stale-MCP-unregistered,
+  stale-config-missing, block-absent, CLAUDE.md-absent. Each fixture asserts
+  the checker's exit code and a substring of its output.
 
 ### Changed
 

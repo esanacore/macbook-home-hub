@@ -23,7 +23,7 @@ The suite is therefore split by what it needs to run:
 
 | Tier | What it checks | Needs hardware | Runs in CI |
 | --- | --- | --- | --- |
-| Static | Governance docs, secrets sweep, OTS inventory, env-var contract, architecture | No | Yes |
+| Static | Governance docs, secrets sweep, OTS inventory, env-var contract, architecture, gbrain block staleness | No | Yes (gbrain staleness is advisory — see below) |
 | Configuration | `docker-compose.yml` parses and resolves | Docker only | Yes, once the file exists |
 | Smoke (end-to-end) | Host reachable, Home Assistant answering on `:8123`, container running | Yes — the hub | No |
 
@@ -36,15 +36,37 @@ machine that does not exist yet. It **skips** rather than passes when
 The standard unit/integration/e2e pyramid maps onto this repository as
 follows:
 
-- **Unit tests**: not applicable. No functions of our own to isolate. The
-  shell helpers in `scripts/` are thin orchestration over external commands;
-  the constitution's own scripts are tested upstream in
-  `constitution/scripts/test_*.sh`.
+- **Unit tests**: `scripts/test_check_gbrain_state.sh` — exercises
+  `scripts/check_gbrain_state.sh` against eight fixture CLAUDE.md files with
+  isolated PATH and HOME, covering: in-sync (local-stdio and remote-http),
+  stale-MCP-unregistered, stale-config-missing, stale-no-gbrain-cli,
+  stale-no-claude-cli, block-absent, and CLAUDE.md-absent. Each fixture
+  asserts the checker's exit code and a substring of its output. This is
+  the one place in the repo with real unit tests, because the staleness
+  checker is the one piece of logic we own that has branch-worthy behavior.
 - **Integration tests**: `docker compose config` — does the declared stack
   resolve into something Docker will accept? Command:
   `bash scripts/run_tests.sh` (the compose tier).
 - **End-to-end tests**: `scripts/smoke_check.sh` — against a running hub.
   Command: `HUB_HOST=<hub-ip> bash scripts/smoke_check.sh`.
+
+### gbrain block staleness check
+
+`scripts/check_gbrain_state.sh` reads the `## GBrain Configuration` block
+from `CLAUDE.md` and verifies its machine-checkable claims (Mode, Config
+file path, MCP registered) against the actual machine state. The block is
+written by `/setup-gbrain` and records machine state; when the repo is
+cloned on a machine without gbrain (CI, a new laptop), the block's claims
+drift from reality. The checker reports `STALE` and exits 1; a clean match
+or absent block exits 0.
+
+In `scripts/run_tests.sh` this checker runs **advisory** (like the
+traceability gate): on CI it will always report STALE because CI runners
+have no gbrain, and that is the expected cross-machine signal, not a suite
+failure. Re-running `/setup-gbrain` on the stale machine rewrites the block
+in place via its HTML-comment delimiters. The unit tests for the checker
+run as a **blocking** check because they use fixtures with isolated
+PATH/HOME and pass on any machine.
 
 ## How to Run Tests
 
