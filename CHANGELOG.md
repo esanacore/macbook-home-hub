@@ -6,6 +6,28 @@ This project follows semantic versioning.
 
 ## Unreleased
 
+### Changed
+
+- Constitution submodule upgraded from **1.42.2 to 1.43.0**. The release adds
+  a wiki link/orphan checker (`check_wiki_links.sh`) and a
+  `constitution-wiki.yml` workflow template. All eight existing checkers pass
+  unchanged against 1.43.0, and no repository file referenced the old version.
+
+  `constitution-wiki.yml` was **deliberately not adopted**: this repository has
+  no `wiki/` directory, and the template's publish job requires a GitHub wiki
+  to have been enabled and initialized by hand, failing loudly until it is.
+  `check_wiki_links.sh` already exits 0 with "No wiki/ directory; nothing to
+  check," so adopting the workflow would add a red job for a feature the
+  project does not use. Adopt it if a `wiki/` is ever introduced.
+
+  Upstream `v1.44.0` was **skipped on purpose**: its tag points at a commit
+  whose `VERSION` file reads `1.25.0`, which appears to be a botched release.
+  That anomaly also masks staleness in `constitution-version.yml` — because the
+  pinned commit is not an ancestor of the malformed tag, the gate reports
+  "ahead of or diverged" and passes instead of reporting BEHIND and failing.
+  This repository was genuinely two releases behind while that check was green.
+  Revisit when upstream corrects the tag.
+
 ### Added
 
 - `compose/docker-compose.yml` declaring the Home Assistant container with a

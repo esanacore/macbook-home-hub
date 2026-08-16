@@ -80,6 +80,15 @@ Keep entries specific, actionable, and current.
       empty, the requirement set was split: 2 verifiable requirements are
       Active (bold IDs, gated), and the 10 hardware-blocked ones are Deferred
       (backticked IDs, outside the gate) in `docs/PRODUCT_REQUIREMENTS.md`.
+- [ ] **Re-evaluate the constitution pin when upstream fixes `v1.44.0`.**
+      Currently pinned to `v1.43.0`. The `v1.44.0` tag points at a commit whose
+      `VERSION` reads `1.25.0`, so it was skipped. That malformed tag also
+      makes `constitution-version.yml` report "diverged" and pass instead of
+      "BEHIND" and fail — do not trust a green `version-gate` to mean the
+      submodule is current until this is resolved. Worth reporting upstream.
+- [ ] **Adopt `constitution-wiki.yml` if a `wiki/` is ever introduced.** Not
+      adopted at 1.43.0 because this repository has no wiki and the template's
+      publish job fails until a GitHub wiki is initialized by hand.
 - [ ] **Promote each deferred requirement as its blocker clears.** Follow
       "Promoting a Deferred Requirement" in `docs/PRODUCT_REQUIREMENTS.md`:
       bold the ID, fill its Verifying Tests cell with a check that actually
