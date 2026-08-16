@@ -23,7 +23,7 @@ The suite is therefore split by what it needs to run:
 
 | Tier | What it checks | Needs hardware | Runs in CI |
 | --- | --- | --- | --- |
-| Static | Governance docs, secrets sweep, OTS inventory, env-var contract, architecture | No | Yes |
+| Static | Governance docs, secrets sweep, OTS inventory, env-var contract, architecture, gbrain block staleness | No | Yes (gbrain staleness is advisory — see below) |
 | Configuration | `docker-compose.yml` parses and resolves | Docker only | Yes, once the file exists |
 | Smoke (end-to-end) | Host reachable, Home Assistant answering on `:8123`, container running | Yes — the hub | No |
 
@@ -36,15 +36,37 @@ machine that does not exist yet. It **skips** rather than passes when
 The standard unit/integration/e2e pyramid maps onto this repository as
 follows:
 
-- **Unit tests**: not applicable. No functions of our own to isolate. The
-  shell helpers in `scripts/` are thin orchestration over external commands;
-  the constitution's own scripts are tested upstream in
-  `constitution/scripts/test_*.sh`.
+- **Unit tests**: `scripts/test_check_gbrain_state.sh` — exercises
+  `scripts/check_gbrain_state.sh` against eight fixture CLAUDE.md files with
+  isolated PATH and HOME, covering: in-sync (local-stdio and remote-http),
+  stale-MCP-unregistered, stale-config-missing, stale-no-gbrain-cli,
+  stale-no-claude-cli, block-absent, and CLAUDE.md-absent. Each fixture
+  asserts the checker's exit code and a substring of its output. This is
+  the one place in the repo with real unit tests, because the staleness
+  checker is the one piece of logic we own that has branch-worthy behavior.
 - **Integration tests**: `docker compose config` — does the declared stack
   resolve into something Docker will accept? Command:
   `bash scripts/run_tests.sh` (the compose tier).
 - **End-to-end tests**: `scripts/smoke_check.sh` — against a running hub.
   Command: `HUB_HOST=<hub-ip> bash scripts/smoke_check.sh`.
+
+### gbrain block staleness check
+
+`scripts/check_gbrain_state.sh` reads the `## GBrain Configuration` block
+from `CLAUDE.md` and verifies its machine-checkable claims (Mode, Config
+file path, MCP registered) against the actual machine state. The block is
+written by `/setup-gbrain` and records machine state; when the repo is
+cloned on a machine without gbrain (CI, a new laptop), the block's claims
+drift from reality. The checker reports `STALE` and exits 1; a clean match
+or absent block exits 0.
+
+In `scripts/run_tests.sh` this checker runs **advisory** (like the
+traceability gate): on CI it will always report STALE because CI runners
+have no gbrain, and that is the expected cross-machine signal, not a suite
+failure. Re-running `/setup-gbrain` on the stale machine rewrites the block
+in place via its HTML-comment delimiters. The unit tests for the checker
+run as a **blocking** check because they use fixtures with isolated
+PATH/HOME and pass on any machine.
 
 ## How to Run Tests
 
@@ -112,11 +134,16 @@ Every requirement ID maps to its verifying check in
 gaps and appear in the gap log above.
 
 Current state: 12 requirements, 2 with an executed verifying check (NFR-001,
-NFR-004), 10 gaps. Two of those gaps (FR-002, FR-004) have a check written but
-never executed — counted as gaps on purpose, because an unexecuted check has
-proven nothing.
+NFR-004), 10 gaps. Two of those gaps (`FR-002`, `FR-004`) have a check written
+but never executed — counted as gaps on purpose, because an unexecuted check
+has proven nothing.
 
-`constitution/scripts/check_traceability.sh` reports those 10. That report is
-accurate and expected, not a tooling failure. It goes quiet as the hub is
-built, and `scripts/run_tests.sh` runs it as advisory until then rather than
-failing the suite on a state that cannot currently be improved.
+The 10 gapped requirements are **Deferred** in `docs/PRODUCT_REQUIREMENTS.md`
+(backticked IDs), which places them outside the blocking CI gate while keeping
+them fully documented here and in the matrix. The 2 verified ones are
+**Active** and gated: CI fails if either loses its verifying test, or if a new
+requirement is promoted to Active without one.
+
+`constitution/scripts/check_traceability.sh` prints the deferred set on every
+run under "matrix rows with no matching declared requirement," so the gap
+count stays visible in CI output rather than being suppressed by it.

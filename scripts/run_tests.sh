@@ -77,6 +77,24 @@ run_check "governance: constitution version references current" \
 printf '\n--- requirements: traceability matrix (advisory)\n'
 bash constitution/scripts/check_traceability.sh || true
 
+# check_gbrain_state.sh detects drift between the `## GBrain Configuration`
+# block in CLAUDE.md and the actual machine state. On a machine that has
+# gbrain configured (the one that wrote the block), it should report OK. On
+# a different machine (CI, a fresh clone) it will report STALE because the
+# block claims gbrain is configured but that machine has no gbrain. That is
+# the expected cross-machine-clone signal, not a suite failure — so it runs
+# advisory, like the traceability gate. Re-running /setup-gbrain on the
+# stale machine rewrites the block in place.
+printf '\n--- gbrain: CLAUDE.md block vs machine state (advisory)\n'
+bash scripts/check_gbrain_state.sh || true
+
+# The unit tests for check_gbrain_state.sh use fixtures with isolated PATH
+# and HOME, so they pass on any machine regardless of whether gbrain is
+# installed. These are blocking — a regression in the checker's logic is a
+# real failure.
+run_check "gbrain: staleness checker unit tests" \
+  bash scripts/test_check_gbrain_state.sh
+
 # --------------------------------------------------------- compose stack ---
 
 if [ -f compose/docker-compose.yml ]; then

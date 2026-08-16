@@ -75,21 +75,31 @@ Keep entries specific, actionable, and current.
 
 ## Tooling & Compliance
 
-- [ ] **Restore the traceability gate to blocking.** The step in
-      `.github/workflows/constitution-compliance.yml` is currently advisory
-      (`|| true`) because 10 of 12 requirements cannot be verified without the
-      hub. Once the gap log in `docs/TEST_PLAN.md` is empty, delete the
-      `|| true` and the step-summary block so the gate blocks again. This is a
-      documented deviation from the constitution template, not a permanent
-      choice.
+- [x] **Restore the traceability gate to blocking.** Done — the `|| true` and
+      step-summary block are gone. Rather than waiting for the gap log to
+      empty, the requirement set was split: 2 verifiable requirements are
+      Active (bold IDs, gated), and the 10 hardware-blocked ones are Deferred
+      (backticked IDs, outside the gate) in `docs/PRODUCT_REQUIREMENTS.md`.
+- [ ] **Promote each deferred requirement as its blocker clears.** Follow
+      "Promoting a Deferred Requirement" in `docs/PRODUCT_REQUIREMENTS.md`:
+      bold the ID, fill its Verifying Tests cell with a check that actually
+      ran, and close its gap-log row — in one change. Bolding without a
+      verifying test fails CI, which is the intended safety property.
+      Never resolve a CI failure here by moving a requirement back to
+      Deferred; deferral means "cannot be checked yet", not "the check is
+      inconvenient".
 - [x] Install and activate the pre-commit hooks on this machine
       (`uv tool install pre-commit && pre-commit install && pre-commit install --hook-type pre-push`).
       Hooks installed 2026-08-15; `pre-commit run --all-files` passes clean.
-- [ ] Enable branch protection and "Automatically delete head branches" in the
+- [x] Enable branch protection and "Automatically delete head branches" in the
       hosting platform settings (see `constitution/INTEGRATION.md`,
-      "Repository Settings Checklist"). Not yet done.
-- [ ] Run `/setup-gbrain` once in this repository to initialize the gstack
-      project brain.
+      "Repository Settings Checklist"). Done by user 2026-08-15.
+- [x] Run `/setup-gbrain` once in this repository to initialize the gstack
+      project brain. Done 2026-08-15 — Supabase engine (project
+      `yvamohixcwjchhxufrcm`, us-west-1), MCP registered at user scope, repo
+      policy read-write. CLAUDE.md carries the `## GBrain Configuration` and
+      `## GBrain Search Guidance` blocks. See `docs/TEST_PLAN.md` for the
+      staleness checker that gates the block against cross-machine clone drift.
 - [x] Delete `.constitution-bootstrap/` — adoption is complete; the directory
       is not read by any parent-repo script and `bootstrap.sh` recreates it if
       ever needed. Done 2026-08-15.

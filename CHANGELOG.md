@@ -16,9 +16,34 @@ This project follows semantic versioning.
   The compose tier of the test suite now finds the file; `docker compose
   config` validation still requires Docker to be installed (GAP-004 stays
   open until then).
+- gstack gbrain initialized for this repo: Supabase engine (project
+  `yvamohixcwjchhxufrcm`, us-west-1), MCP registered at user scope, repo
+  policy read-write. `CLAUDE.md` carries the `## GBrain Configuration` and
+  `## GBrain Search Guidance` blocks. The Supabase DB password and pooler
+  URL live only in `~/.gbrain/config.json` (mode 0600), never in this repo.
+- `scripts/check_gbrain_state.sh` — detects drift between the
+  `## GBrain Configuration` block in `CLAUDE.md` and the actual machine state
+  (gbrain installed? MCP registered? config file present?). Catches the
+  cross-machine-clone staleness risk where a CLAUDE.md committed on machine A
+  claims gbrain is configured, but machine B has no gbrain. Wired into
+  `scripts/run_tests.sh` as a static-tier check.
+- `scripts/test_check_gbrain_state.sh` — unit tests for the staleness checker
+  covering five fixture states: in-sync, stale-MCP-unregistered,
+  stale-config-missing, block-absent, CLAUDE.md-absent. Each fixture asserts
+  the checker's exit code and a substring of its output.
 
 ### Changed
 
+- The requirements-traceability CI gate is **blocking again**, reverting the
+  temporary advisory accommodation added in `7be4dc3`. Instead of waiting for
+  the gap log to empty, `docs/PRODUCT_REQUIREMENTS.md` now separates **Active**
+  requirements (bold IDs — gated, and each has a check that has actually run)
+  from **Deferred** ones (backticked IDs — outside the gate because they cannot
+  be verified until the hub exists). Deferred requirements keep their full
+  text, acceptance criteria, matrix rows, gap-log entries, and TODO items, and
+  `check_traceability.sh` prints every one of them on each run. Promoting a
+  requirement to Active without a verifying test fails CI — the safety property
+  the gate exists to provide.
 - Filled `docs/adr/0001-record-architecture-decisions.md` (was the unfilled
   template). Now an Accepted ADR recording the decision to use ADRs, with
   ADR-0002 noted as Related.
