@@ -6,6 +6,35 @@ This project follows semantic versioning.
 
 ## Unreleased
 
+### Fixed
+
+- **Corrected the Wi-Fi driver guidance, which named the wrong driver.**
+  `docs/SETUP.md` and `docs/TROUBLESHOOTING.md` both instructed installing
+  `broadcom-sta-dkms` (the proprietary `wl` module) to bring up the
+  `MacBook8,1`'s Broadcom Wi-Fi. That driver does not support this chip. Its
+  own supported-hardware table, read from the package on the Mint 22.3 XFCE
+  ISO, ends at `0x14e4:0x43a0` (BCM4360/4352); the MacBook8,1 uses **BCM4350,
+  `0x14e4:0x43a3`**. Following the old instructions would have installed a
+  driver that cannot bind the device, and whose `/etc/modprobe.d` blacklist can
+  suppress the driver that does work.
+
+  The chip is handled by the **in-tree `brcmfmac`** driver, and everything it
+  needs already ships in the Mint 22.3 live filesystem:
+  `brcmfmac4350-pcie.bin`, `brcmfmac4350c2-pcie.bin`, `linux-firmware`
+  20240318, and the module itself on kernel 6.14.0-37 HWE. Wi-Fi is therefore
+  expected to work in the live session with no driver install.
+
+  This also **downgrades the USB Ethernet adapter from a hard prerequisite to
+  optional insurance**, reversing this project's standing claim that the
+  Broadcom driver gap was "the single most likely thing to block a first run."
+
+  Two limits on the claim, both recorded in the docs: it is derived from
+  inspecting the ISO rather than from booting the hardware, and Mint ships no
+  Apple-specific NVRAM blob for this chip (none of the 108 files in
+  `/usr/lib/firmware/brcm/` matches `brcmfmac4350-pcie.Apple*.txt`), so
+  `brcmfmac` must read calibration data from the card's OTP. Confirming both at
+  first boot is tracked in `TODO.md`.
+
 ### Changed
 
 - Constitution submodule upgraded from **1.42.2 to 1.43.0**. The release adds

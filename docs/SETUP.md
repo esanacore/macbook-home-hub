@@ -79,11 +79,22 @@ and picks up the constitution with no extra configuration. See `docs/HELP.md`,
 
 ### Before you start
 
-Have a **USB Ethernet adapter** and a **USB-C hub** physically in hand. The
-Broadcom BCM4350 Wi-Fi chip has no driver in the live installer, so the
-machine has no network until after the first boot. Without wired connectivity
-the install stalls at exactly the point you need to download the driver. This
-is the most likely thing to derail a first attempt.
+Have a **USB-C hub** in hand — the machine has a single USB-C port and you
+need it to attach the install stick at all.
+
+A **USB Ethernet adapter** is worth having as insurance, but is probably not
+required. This document previously stated that the Broadcom BCM4350 has no
+driver in the live installer and that this was "the most likely thing to
+derail a first attempt." Inspection of the Mint 22.3 XFCE ISO on 2026-09-04
+contradicts that: the `brcmfmac` driver and its `brcmfmac4350-pcie.bin`
+firmware are both present in the live filesystem, so Wi-Fi is expected to work
+in the live session unaided. See `docs/TROUBLESHOOTING.md`, "No Wi-Fi during
+or after installation," for the evidence and the residual risk (no
+Apple-specific NVRAM blob ships, so the driver must read the card's OTP).
+
+This expectation is derived from the image, **not** from a boot on the
+hardware. Until someone has actually booted the MacBook, treat the adapter as
+cheap insurance rather than dead weight.
 
 ### 1. Create install media
 
@@ -95,14 +106,22 @@ device through the USB-C hub.
 
 Standard guided install. Do not expect Wi-Fi to work during this step.
 
-### 3. Restore networking
+### 3. Confirm networking
+
+Wi-Fi is expected to already work — verify rather than install:
 
 ```bash
-sudo apt update
-sudo apt install broadcom-sta-dkms
-sudo modprobe wl
-ip link          # expect a wl* interface
+lspci -nn | grep -i network   # expect Broadcom [14e4:43a3]
+lsmod | grep brcmfmac         # expect the in-tree driver loaded
+ip link                       # expect a wl* interface
 ```
+
+**Do not install `broadcom-sta-dkms`.** Despite years of Broadcom-on-Linux
+advice pointing at it, that driver does not support the BCM4350 — its own
+supported-device table stops at `0x43a0`, and this chip is `0x43a3`.
+Installing it cannot help and its modprobe blacklist can break the driver that
+works. If any of the three commands above comes back empty, follow
+`docs/TROUBLESHOOTING.md` rather than reaching for `wl`.
 
 ### 4. Apply always-on configuration
 

@@ -7,9 +7,23 @@ Keep entries specific, actionable, and current.
 ## Provisioning (host)
 
 - [ ] Flash Linux Mint XFCE live USB; confirm boot on the MacBook8,1 via USB-C hub.
-- [ ] Have a USB Ethernet or known-good USB Wi-Fi dongle ready for the install
-      (Broadcom BCM4350 driver gap in the live installer).
-- [ ] Install to internal SSD; install the `broadcom-wl` / `wl` driver post-install.
+      ISO downloaded and verified 2026-09-04 (`linuxmint-22.3-xfce-64bit.iso`,
+      SHA-256 matched Mint's GPG-signed `sha256sum.txt`). Writing it to the
+      Verbatim 29 GB stick has **failed verification twice** — see the media
+      item under Testing below.
+- [ ] Have a USB-C hub in hand (required — single port). A USB Ethernet
+      adapter is now optional insurance rather than a hard prerequisite; see
+      the Broadcom finding below.
+- [ ] **Confirm the Broadcom finding on real hardware.** ISO inspection on
+      2026-09-04 shows `brcmfmac` + `brcmfmac4350-pcie.bin` ship in the Mint
+      22.3 live filesystem, and that `broadcom-sta-dkms` does **not** support
+      BCM4350 (`14e4:43a3`) — its supported table stops at `0x43a0`. The docs
+      have been corrected accordingly. Verify at first boot with
+      `lspci -nn | grep -i network`, `lsmod | grep brcmfmac`, and `ip link`,
+      then downgrade the entries in `docs/TROUBLESHOOTING.md` and
+      `docs/SETUP.md` from "ISO-verified" to observed. If `lspci` reports an ID
+      other than `14e4:43a3`, the whole analysis needs redoing.
+- [ ] Install to internal SSD. Do **not** install `broadcom-sta-dkms`.
 - [ ] Apply always-on config: `HandleLidSwitch*=ignore`, mask sleep targets
       (see `docs/OPERATIONS.md`); verify box stays reachable with lid closed.
 - [ ] Check whether a battery charge-limit control is exposed under Linux on
@@ -41,6 +55,17 @@ Keep entries specific, actionable, and current.
 
 ## Testing
 
+- [ ] **Resolve the install-media write failure.** Two full writes of the
+      verified ISO to the Verbatim STORE_N_GO (29.3 GB, serial
+      `F6FE8AE03B513808`) both failed verification on
+      `casper/filesystem.squashfs` — 1293 of 1294 files OK, that one bad.
+      The second write completed cleanly (`dd` reported all 3033710592 bytes,
+      `conv=fsync`, exit 0) with **no kernel I/O errors**, and file sizes match
+      exactly, so this is silent corruption rather than truncation. First
+      differing byte is 330420225 within the squashfs. The source is not at
+      fault: the pristine ISO's own md5 matches its manifest
+      (`fc2e8a25f449b1ec36dc09bbed38b69d`). Next step is a rewrite without
+      `oflag=direct`; if that also fails, replace the stick.
 - [x] Define what "tests" mean for a config repo — declared in
       `docs/TEST_PLAN.md`, implemented as `scripts/run_tests.sh` (static +
       config tiers) and `scripts/smoke_check.sh` (host tier).

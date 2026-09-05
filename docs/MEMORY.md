@@ -44,6 +44,15 @@ This file contains durable memories, codebase learnings, user preferences, and k
   gitignored produces no finding — correct behavior, but it means dropping a
   test file like `id_rsa` into the tree is *not* a valid way to prove the sweep
   works.
+- Long-standing Broadcom-on-Linux advice points at `broadcom-sta-dkms` (the
+  `wl` module), but that driver's supported-device table stops at
+  `0x14e4:0x43a0` (BCM4360/4352). The `MacBook8,1`'s BCM4350 is `0x14e4:0x43a3`
+  and is served by the in-tree `brcmfmac` driver instead. **Verify a chip's PCI
+  ID against a driver's own supported list before trusting community
+  guidance** — a package being present in a distro's pool is not evidence that
+  it supports your hardware. This repository carried the wrong instruction in
+  both `docs/SETUP.md` and `docs/TROUBLESHOOTING.md` until 2026-09-04.
+  Approved 2026-09-04.
 
 ## Active Project Decisions
 
