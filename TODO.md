@@ -6,14 +6,22 @@ Keep entries specific, actionable, and current.
 
 ## Provisioning (host)
 
-- [ ] Flash Linux Mint XFCE live USB; confirm boot on the MacBook8,1 via USB-C hub.
-      ISO downloaded and verified 2026-09-04 (`linuxmint-22.3-xfce-64bit.iso`,
-      SHA-256 matched Mint's GPG-signed `sha256sum.txt`). Writing it to the
-      Verbatim 29 GB stick has **failed verification twice** — see the media
-      item under Testing below.
-- [ ] Have a USB-C hub in hand (required — single port). A USB Ethernet
-      adapter is now optional insurance rather than a hard prerequisite; see
-      the Broadcom finding below.
+- [x] **Install media written and verified 2026-09-04.**
+      `linuxmint-22.3-xfce-64bit.iso` downloaded and verified end to end
+      (SHA-256 matched Mint's GPG-signed `sha256sum.txt`), written to a
+      **Samsung PSSD T7** (serial `S6XGNS0TC00592P`) at 317 MB/s. All 1294
+      files pass Mint's own `md5sum.txt` manifest. The Verbatim stick that was
+      tried first is dead — see the media item under Testing below.
+- [ ] Boot the MacBook8,1 from the T7: shut down fully, hold `Option`/`Alt`,
+      select **EFI Boot**. The T7 is USB-C native, so it can connect directly
+      without the hub — one less variable at Apple's boot picker.
+- [ ] Reclaim the T7's capacity after the install. `dd` replaced its partition
+      table, so 1.8 TB currently presents as a 2.8 GB volume; repartition and
+      reformat once the MacBook no longer needs the media.
+- [ ] Have a USB-C hub in hand as a fallback (single port on the machine). A
+      USB Ethernet adapter is optional insurance rather than a hard
+      prerequisite; see the Broadcom finding below. Note the MacBook has no
+      built-in Ethernet, so the adapter only helps via the hub.
 - [ ] **Confirm the Broadcom finding on real hardware.** ISO inspection on
       2026-09-04 shows `brcmfmac` + `brcmfmac4350-pcie.bin` ship in the Mint
       22.3 live filesystem, and that `broadcom-sta-dkms` does **not** support
@@ -55,17 +63,37 @@ Keep entries specific, actionable, and current.
 
 ## Testing
 
-- [ ] **Resolve the install-media write failure.** Two full writes of the
-      verified ISO to the Verbatim STORE_N_GO (29.3 GB, serial
-      `F6FE8AE03B513808`) both failed verification on
-      `casper/filesystem.squashfs` — 1293 of 1294 files OK, that one bad.
-      The second write completed cleanly (`dd` reported all 3033710592 bytes,
-      `conv=fsync`, exit 0) with **no kernel I/O errors**, and file sizes match
-      exactly, so this is silent corruption rather than truncation. First
-      differing byte is 330420225 within the squashfs. The source is not at
-      fault: the pristine ISO's own md5 matches its manifest
-      (`fc2e8a25f449b1ec36dc09bbed38b69d`). Next step is a rewrite without
-      `oflag=direct`; if that also fails, replace the stick.
+- [x] **Install-media write failure diagnosed and resolved 2026-09-04:
+      failing USB stick, since discarded.** Three writes of the verified ISO to
+      the Verbatim STORE_N_GO (29.3 GB, serial `F6FE8AE03B513808`) each failed
+      verification on `casper/filesystem.squashfs` (1293 of 1294 files OK),
+      including one after `wipefs -a` with buffered I/O instead of
+      `oflag=direct`. Every write reported success and the kernel logged **no
+      I/O errors** — the corruption was entirely silent.
+
+      What identified the stick rather than the host: the first differing byte
+      **moved** between attempts (330420225, then 305254401), ruling out a
+      fixed bad block, and three cold reads of one unchanged 64 MB region —
+      unmounting and remounting between each to defeat the page cache —
+      returned **three different MD5s**. A device that cannot reproduce its own
+      contents on read cannot store data.
+
+      Everything else was exonerated by evidence: the source ISO re-hashed
+      correctly twice (so the download and RAM were fine), the pristine ISO
+      matched its own manifest (`fc2e8a25f449b1ec36dc09bbed38b69d`, so the
+      manifest was not stale), and the Samsung T7 then wrote and verified
+      1294/1294 through the same USB subsystem, RAM, and `dd` invocation.
+
+      Lesson worth keeping: `dd` exiting 0 is not evidence that media is good,
+      and neither is a clean `dmesg`. Verify written media against a manifest
+      before trusting it — Mint ships `md5sum.txt` on the ISO for exactly this.
+      An unverified live USB fails later, on unfamiliar hardware, in ways that
+      look like problems with that hardware.
+
+      Note also that `dd` was originally killed mid-write when Xorg segfaulted
+      in `nvidia_drv.so` and took the session down. Long writes should run
+      detached (`systemd-run --unit=... --service-type=oneshot`) so a desktop
+      crash cannot truncate them.
 - [x] Define what "tests" mean for a config repo — declared in
       `docs/TEST_PLAN.md`, implemented as `scripts/run_tests.sh` (static +
       config tiers) and `scripts/smoke_check.sh` (host tier).
