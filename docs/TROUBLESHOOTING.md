@@ -11,24 +11,63 @@ the hub is actually built — see `TODO.md`.
 
 ## Host and Hardware
 
-### No Wi-Fi during or after installation (anticipated)
+### No Wi-Fi during or after installation (ISO-verified; boot not yet observed)
 
-- **Symptoms**: The live installer shows no wireless networks. After install,
-  `ip link` lists no `wl*` interface.
-- **Cause**: The `MacBook8,1` uses a Broadcom BCM4350 chip whose driver is
-  proprietary and absent from most live images. This is expected, not a broken
-  install.
-- **Fix**: Provide wired connectivity first — a USB Ethernet adapter through
-  the USB-C hub — then install the driver:
+> **Correction, 2026-09-04.** This entry previously prescribed
+> `broadcom-sta-dkms`. That is the **wrong driver for this chip** — see
+> "Do not install `broadcom-sta-dkms`" below. The correction comes from
+> inspecting the Mint 22.3 XFCE ISO directly, not from a boot on the hardware.
+
+- **Symptoms**: The live session shows no wireless networks. `ip link` lists no
+  `wl*` interface.
+- **Cause**: The `MacBook8,1` uses a Broadcom **BCM4350** (PCI `14e4:43a3`).
+  The long-standing advice for Broadcom-on-Linux is the proprietary
+  `broadcom-sta` (`wl`) driver, but that driver does not support this chip.
+  BCM4350 is handled by the **in-tree `brcmfmac`** driver plus firmware.
+- **Expectation**: On Mint 22.3 XFCE, Wi-Fi is expected to work in the live
+  session with no driver install and no dongle. The required pieces ship on the
+  ISO and are preinstalled in the live filesystem:
+
+  | Component | Present on Mint 22.3 XFCE ISO |
+  | --- | --- |
+  | `brcmfmac4350-pcie.bin` | yes — `/usr/lib/firmware/brcm/` in the squashfs |
+  | `brcmfmac4350c2-pcie.bin` | yes (C2 stepping variant) |
+  | `linux-firmware` 20240318 | yes — preinstalled |
+  | `brcmfmac` module | yes — in-tree, kernel 6.14.0-37 HWE |
+
+- **First diagnostic**: confirm the chip before doing anything else.
   ```bash
-  sudo apt update
-  sudo apt install broadcom-sta-dkms   # provides the wl module (Mint/Ubuntu)
-  sudo modprobe wl
+  lspci -nn | grep -i network      # expect [14e4:43a3]
+  lsmod | grep brcmfmac            # expect the module loaded
+  dmesg | grep -i brcmfmac         # firmware load success or failure
   ```
-  Confirm with `ip link` and `lspci -k | grep -A3 Network`. On Fedora the
-  equivalent comes from RPM Fusion's `broadcom-wl`. Have the adapter on hand
-  *before* starting the install; this is the single most likely thing to
-  block a first run.
+  If `lspci` reports something other than `14e4:43a3`, this entry does not
+  apply and the driver question must be re-derived from the actual ID.
+
+- **If `brcmfmac` loads but the interface never appears**: the most likely
+  cause is missing NVRAM. Mint 22.3 ships **no Apple-specific NVRAM blob** for
+  this chip (no `brcmfmac4350-pcie.Apple*.txt` among the 108 files in
+  `/usr/lib/firmware/brcm/`), so the driver must read calibration data from the
+  card's own OTP. That normally works on Macs, but it is the one identified way
+  this can still fail. Check `dmesg | grep -i brcmfmac` for an NVRAM
+  complaint before concluding anything else is wrong.
+
+- **Do not install `broadcom-sta-dkms`.** It is present in `pool/` on the ISO,
+  so it looks like the right answer, but its own supported-hardware table
+  (`/usr/share/doc/broadcom-sta-dkms/README`) ends at:
+  ```
+  4331  Dualband    0x14e4  0x4331
+  4360  Dualband    0x14e4  0x43a0
+  4352  Dualband    0x14e4  0x43a0
+  ```
+  `0x43a3` is absent. Installing it will not bind the chip, and its
+  `/etc/modprobe.d` blacklist can suppress the driver that does work.
+
+- **Fallback, only if the above genuinely fails**: a USB Ethernet adapter
+  through the USB-C hub gives wired connectivity to work from. Note that a
+  DKMS build can be done fully offline from the stick if ever needed —
+  `dkms`, `gcc`, `libc6-dev`, and `linux-headers-6.14.0-37-generic` are all
+  preinstalled in the live filesystem.
 
 ### Hub becomes unreachable when the lid is closed (anticipated)
 
