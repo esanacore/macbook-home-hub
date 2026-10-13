@@ -37,7 +37,7 @@ decision is made before a secret exists.
 
 | Variable | Purpose | Sensitive | Notes |
 | --- | --- | --- | --- |
-| `HA_CONFIG_PATH` | Host path bind-mounted to the Home Assistant config directory | No | Defaults to `./config`; lets the stack be relocated without editing the compose file |
+| `HA_CONFIG_PATH` | Host path bind-mounted to the Home Assistant config directory | No | Not wired yet: the compose file hard-codes `../config` (the repository-root `config/`). Introduce as `${HA_CONFIG_PATH:-../config}` if the stack ever needs relocating |
 | `PUID` / `PGID` | Ownership of bind-mounted config files | No | Prevents root-owned files appearing in the working tree |
 | `MQTT_USERNAME` | Mosquitto broker account, if MQTT is adopted | No | Pairs with `MQTT_PASSWORD` |
 | `MQTT_PASSWORD` | Mosquitto broker credential | **Yes** | Must come from an untracked `.env`, never a committed compose file |

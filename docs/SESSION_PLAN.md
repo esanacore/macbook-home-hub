@@ -6,8 +6,10 @@ This document records the current session's planned work before implementation b
 
 ## Status: no session in progress
 
-The last session (2026-08-15 — constitution compliance pass) completed. Its
-outcome is recorded in `docs/AGENT_HANDOFF.md` and `CHANGELOG.md`; its
+The last session (2026-10-12 — first run on the hub: repository tooling,
+XFCE power settings, `provision_host.sh` / `check_host_config.sh`, docs from
+"planned" to "observed") completed. Its outcome and the Next Steps procedure
+are in `docs/AGENT_HANDOFF.md`; user-facing changes are in `CHANGELOG.md`;
 follow-up work is in `TODO.md`.
 
 The next agent should overwrite the sections below.
@@ -16,10 +18,9 @@ The next agent should overwrite the sections below.
 
 - **Date/Time**: not started
 - **Agent**: not started
-- **Previous Session**: 2026-08-15, completed cleanly. See
-  `docs/AGENT_HANDOFF.md` for what was left pending — chiefly that no
-  hardware provisioning has happened and every host-dependent requirement
-  remains unverified.
+- **Previous Session**: 2026-10-12, completed cleanly. The root-level
+  provisioning script has **not** been run yet — see `docs/AGENT_HANDOFF.md`
+  Next Steps, step 1, before planning anything that assumes Docker or SSH.
 
 ## Goal
 

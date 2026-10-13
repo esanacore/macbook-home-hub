@@ -6,29 +6,71 @@ This project follows semantic versioning.
 
 ## Unreleased
 
-### Changed
-
-- Constitution submodule upgraded from **1.42.2 to 1.43.0**. The release adds
-  a wiki link/orphan checker (`check_wiki_links.sh`) and a
-  `constitution-wiki.yml` workflow template. All eight existing checkers pass
-  unchanged against 1.43.0, and no repository file referenced the old version.
-
-  `constitution-wiki.yml` was **deliberately not adopted**: this repository has
-  no `wiki/` directory, and the template's publish job requires a GitHub wiki
-  to have been enabled and initialized by hand, failing loudly until it is.
-  `check_wiki_links.sh` already exits 0 with "No wiki/ directory; nothing to
-  check," so adopting the workflow would add a red job for a feature the
-  project does not use. Adopt it if a `wiki/` is ever introduced.
-
-  Upstream `v1.44.0` was **skipped on purpose**: its tag points at a commit
-  whose `VERSION` file reads `1.25.0`, which appears to be a botched release.
-  That anomaly also masks staleness in `constitution-version.yml` — because the
-  pinned commit is not an ancestor of the malformed tag, the gate reports
-  "ahead of or diverged" and passes instead of reporting BEHIND and failing.
-  This repository was genuinely two releases behind while that check was green.
-  Revisit when upstream corrects the tag.
-
 ### Added
+
+- **First unattended reboot passed.** After `sudo reboot` on 2026-10-12 the
+  host booted in 14 s, the `home-assistant` container started 14 s later on
+  its `unless-stopped` policy, and about a minute after boot
+  `HUB_HOST=192.168.1.192 bash scripts/run_tests.sh` reported **11 PASS / 0
+  FAIL / 0 SKIP** — the first fully green run on the hub, with the logind lid
+  policy live and the docker group in session. `FR-003` promoted to Active,
+  Verified; `FR-001` promoted to Active, In Progress (AC-2/AC-3 verified by
+  `check_host_config.sh`, the 30-minute lid test still manual). GAP-003
+  closed; GAP-001 reduced to its manual residual.
+
+- **The hub is running.** On 2026-10-12 the operator ran
+  `scripts/provision_host.sh` on the MacBook (logind drop-in, sleep targets
+  masked, `openssh-server` 9.6p1, `docker.io` 29.1.3, `docker-compose-v2`
+  2.40.3, `ssh.socket` and `docker` enabled, user in `docker`), and Home
+  Assistant `2026.8.0` was pulled and started. `docker compose config` passed,
+  `:8123` answered HTTP 302 about 10 seconds after container start, and
+  `scripts/smoke_check.sh` passed against `192.168.1.192`. The full suite with
+  `HUB_HOST` set reports 10 PASS / 1 FAIL / 0 SKIP — the one FAIL is the
+  host-config tier waiting on the first reboot (logind lid policy, docker
+  group).
+- **`FR-002` and `FR-004` promoted to Active** on the strength of checks that
+  ran on the hub; GAP-002 and GAP-004 closed. `FR-004` is Verified; `FR-002`
+  is In Progress until the smoke check is repeated from a second LAN host as
+  its acceptance criterion literally states. `FR-001` stays deferred with an
+  executed-but-failing check.
+- `docs/OTS_SOFTWARE.md`: Docker, Home Assistant and OpenSSH → **Active**.
+- Home Assistant's starter `configuration.yaml`, `automations.yaml`,
+  `scenes.yaml`, `scripts.yaml` committed from `config/` as the hand-authored
+  configuration layer; `.ha_run.lock` added to `.gitignore`.
+- `docs/TROUBLESHOOTING.md`: observed first-start baseline (302 in ~10 s) and
+  a new entry for the harmless Bluetooth `NET_ADMIN/NET_RAW` traceback.
+- `.pre-commit-config.yaml`: whitespace fixers skip `config/` (Home Assistant
+  writes those files as root and rewrites them itself) and `check-yaml` runs
+  with `--unsafe` so HA's `!include` / `!secret` tags parse as a syntax check.
+
+- **First run on the hub.** The `MacBook8,1` (`peppermint-patty`) was imaged
+  with Linux Mint 22.3 XFCE on 2026-10-12 and this repository was set up on it
+  per `docs/SETUP.md` Part 1: constitution submodule initialized, Git identity
+  set, `pre-commit` (via `uv`) installed with both commit and pre-push hooks,
+  Bun + gstack installed with `constitution/scripts/setup-machine.sh`. The XFCE
+  power manager was set to never suspend (lid = nothing, idle = never).
+- `scripts/provision_host.sh` — the root-level half of provisioning in one
+  idempotent, reviewable script: logind lid-switch drop-in
+  (`/etc/systemd/logind.conf.d/50-macbook-home-hub.conf`), sleep targets
+  masked, `openssh-server` + `docker.io` + `docker-compose-v2` installed and
+  enabled (`ssh.socket`, the socket-activated unit Mint 22 ships), user added to `docker`. Refuses to run on anything but a
+  `MacBook8,1` without `--force`, and deliberately does not restart logind
+  (that can end the operator's session; the next step is a reboot anyway).
+  **Written and reviewed; not yet run** — `sudo` needs a password an agent
+  cannot type.
+- `scripts/check_host_config.sh` — verifies the always-on state without root
+  by reading the *live* logind properties over D-Bus, the four sleep targets,
+  Docker and SSH unit states, and the XFCE power-manager settings. This is the
+  executable form of FR-001-AC-2/AC-3. Ran on the hub 2026-10-12 and reported
+  FAIL on every root-level item, as expected before `provision_host.sh`.
+- `scripts/test_check_host_config.sh` — 16 fixture-driven unit tests for the
+  checker (fake `busctl`/`systemctl`/`docker`/`id`/`xfconf-query` on `PATH`),
+  one negative case per check plus the empty-inherits-parent rule for
+  `HandleLidSwitchExternalPower`. Blocking in `scripts/run_tests.sh`.
+- `scripts/run_tests.sh` gained a **host-config tier**: runs
+  `check_host_config.sh` as a blocking check when on the `MacBook8,1` (or
+  `HUB_LOCAL=1`), SKIPs elsewhere.
+- `docs/OTS_SOFTWARE.md` row OTS-006 for `openssh-server`.
 
 - `compose/docker-compose.yml` declaring the Home Assistant container with a
   pinned dated image tag (`ghcr.io/home-assistant/home-assistant:2026.8.0`),
@@ -55,6 +97,62 @@ This project follows semantic versioning.
   the checker's exit code and a substring of its output.
 
 ### Changed
+
+- `compose/docker-compose.yml` bind mount is now `../config` instead of
+  `./config`. Compose resolves relative paths against the compose file's
+  directory, so the old value meant `compose/config/`, which carried its own
+  ignore-everything `.gitignore` (now removed along with its `.gitkeep`). The
+  new value is the repository-root `config/` that `README.md`, `.gitignore`
+  and `docs/ENV_VARS.md` all describe — where runtime state is ignored
+  selectively so hand-authored YAML can be tracked. `config/.gitkeep` added so
+  the directory exists with the operator's ownership before Docker creates it
+  as root; `.HA_VERSION` and `blueprints/` added to the ignore list.
+- `docs/SETUP.md` Part 2 rewritten from "planned, unverified" to what was
+  observed on the hardware: Wi-Fi via in-tree `brcmfmac` with no dongle
+  (interface `wlp1s0`; the Apple NVRAM/CLM blobs fail to load and the OTP
+  fallback carries it), no battery charge-limit control exposed, the two-layer
+  lid-switch story (logind **and** the XFCE power manager, which holds its own
+  `handle-lid-switch` inhibitor), and the correct Mint 22 package names
+  (`docker-compose-v2`, not `docker-compose-plugin`). Part 1 now installs
+  `pre-commit` with `uv` since stock Mint ships no `pip`.
+- `docs/OPERATIONS.md`: lid-switch section covers both policy layers and the
+  drop-in; battery section records the 2026-10-12 finding (no charge limit;
+  baseline 397 cycles, 73% of design capacity); deployment and reachability
+  sections carry the real hostname and address and the `-f compose/...` form.
+- `docs/TROUBLESHOOTING.md`: Wi-Fi entry and battery entry are now
+  **(observed)**; lid entry records the observed defaults; new entry for
+  `sudo` from an agent session; `pre-commit` install hint for Mint.
+- `docs/OTS_SOFTWARE.md`: OTS-001 Linux Mint → **Active** (22.3, kernel
+  7.0.0-38, observed running the static test tier); Docker row names the real
+  packages and versions; verification caveat updated.
+- `docs/TEST_PLAN.md`: host-config tier added to the tier table and strategy;
+  coverage-evaluation row for 2026-10-12 (still 2 of 12 executed — nothing
+  promoted); GAP-001 and GAP-004 descriptions reflect that the machine exists.
+- `docs/COMMAND_REFERENCE.md`, `README.md`: provisioning and verification
+  commands, current status, structure tree.
+- The unmerged 2026-09-04 branch `docs/broadcom-driver-correction` (Wi-Fi
+  driver correction, install-media diagnosis, memory entries) is merged into
+  this change, since the hardware confirmed all of it.
+
+- Constitution submodule upgraded from **1.42.2 to 1.43.0**. The release adds
+  a wiki link/orphan checker (`check_wiki_links.sh`) and a
+  `constitution-wiki.yml` workflow template. All eight existing checkers pass
+  unchanged against 1.43.0, and no repository file referenced the old version.
+
+  `constitution-wiki.yml` was **deliberately not adopted**: this repository has
+  no `wiki/` directory, and the template's publish job requires a GitHub wiki
+  to have been enabled and initialized by hand, failing loudly until it is.
+  `check_wiki_links.sh` already exits 0 with "No wiki/ directory; nothing to
+  check," so adopting the workflow would add a red job for a feature the
+  project does not use. Adopt it if a `wiki/` is ever introduced.
+
+  Upstream `v1.44.0` was **skipped on purpose**: its tag points at a commit
+  whose `VERSION` file reads `1.25.0`, which appears to be a botched release.
+  That anomaly also masks staleness in `constitution-version.yml` — because the
+  pinned commit is not an ancestor of the malformed tag, the gate reports
+  "ahead of or diverged" and passes instead of reporting BEHIND and failing.
+  This repository was genuinely two releases behind while that check was green.
+  Revisit when upstream corrects the tag.
 
 - The requirements-traceability CI gate is **blocking again**, reverting the
   temporary advisory accommodation added in `7be4dc3`. Instead of waiting for
@@ -83,6 +181,41 @@ This project follows semantic versioning.
 - `.devcontainer/devcontainer.json` no longer installs the Node feature —
   this repo has no JavaScript.
 
+### Fixed
+
+- **Corrected the Wi-Fi driver guidance, which named the wrong driver.**
+  `docs/SETUP.md` and `docs/TROUBLESHOOTING.md` both instructed installing
+  `broadcom-sta-dkms` (the proprietary `wl` module) to bring up the
+  `MacBook8,1`'s Broadcom Wi-Fi. That driver does not support this chip. Its
+  own supported-hardware table, read from the package on the Mint 22.3 XFCE
+  ISO, ends at `0x14e4:0x43a0` (BCM4360/4352); the MacBook8,1 uses **BCM4350,
+  `0x14e4:0x43a3`**. Following the old instructions would have installed a
+  driver that cannot bind the device, and whose `/etc/modprobe.d` blacklist can
+  suppress the driver that does work.
+
+  The chip is handled by the **in-tree `brcmfmac`** driver, and everything it
+  needs already ships in the Mint 22.3 live filesystem:
+  `brcmfmac4350-pcie.bin`, `brcmfmac4350c2-pcie.bin`, `linux-firmware`
+  20240318, and the module itself on kernel 6.14.0-37 HWE. Wi-Fi is therefore
+  expected to work in the live session with no driver install.
+
+  This also **downgrades the USB Ethernet adapter from a hard prerequisite to
+  optional insurance**, reversing this project's standing claim that the
+  Broadcom driver gap was "the single most likely thing to block a first run."
+
+  Two limits on the claim, both recorded in the docs: it is derived from
+  inspecting the ISO rather than from booting the hardware, and Mint ships no
+  Apple-specific NVRAM blob for this chip (none of the 108 files in
+  `/usr/lib/firmware/brcm/` matches `brcmfmac4350-pcie.Apple*.txt`), so
+  `brcmfmac` must read calibration data from the card's OTP. Confirming both at
+  first boot is tracked in `TODO.md`.
+
+- pre-commit hooks installed and active (`pre-commit install` plus
+  `pre-commit install --hook-type pre-push` for the secrets sweep). First
+  `pre-commit run --all-files` trimmed trailing whitespace and normalized
+  end-of-file on `CLAUDE.md`, `docs/MEMORY.md`, `docs/AGENT_PROMPTS.md`, and
+  `docs/adr/0001-record-architecture-decisions.md`.
+
 ### Removed
 
 - `docs/MVP_BACKLOG.md` — not in the constitution compliance list and carried
@@ -90,14 +223,6 @@ This project follows semantic versioning.
 - `.constitution-bootstrap/` — adoption complete. Not read by any
   parent-repo script; `constitution/scripts/bootstrap.sh` recreates it if
   ever rerun.
-
-### Fixed
-
-- pre-commit hooks installed and active (`pre-commit install` plus
-  `pre-commit install --hook-type pre-push` for the secrets sweep). First
-  `pre-commit run --all-files` trimmed trailing whitespace and normalized
-  end-of-file on `CLAUDE.md`, `docs/MEMORY.md`, `docs/AGENT_PROMPTS.md`, and
-  `docs/adr/0001-record-architecture-decisions.md`.
 
 ## [0.1.0] - 2026-08-15
 

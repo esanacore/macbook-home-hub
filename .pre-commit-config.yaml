@@ -13,9 +13,16 @@ repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.6.0
     hooks:
+      # config/ is written by Home Assistant as root and rewritten on its own
+      # schedule; the whitespace fixers cannot write it and should not fight it.
       - id: trailing-whitespace
+        exclude: ^config/
       - id: end-of-file-fixer
+        exclude: ^config/
+      # --unsafe: still a syntax check, but tolerates Home Assistant's custom
+      # tags (!include, !include_dir_merge_named, !secret) in config/.
       - id: check-yaml
+        args: [--unsafe]
       - id: check-json
       - id: check-merge-conflict
       - id: detect-private-key
