@@ -36,11 +36,9 @@ Keep entries specific, actionable, and current.
       user added to `docker`. `check_host_config.sh` afterwards: sleep
       targets, docker, ssh OK; logind still `suspend` and group membership
       not yet in the session — both clear at the first reboot.
-- [ ] **Reboot the hub** (`sudo reboot`). This applies the logind drop-in,
-      picks up the docker group, and is the FR-003 unattended-restart test:
-      afterwards `bash scripts/check_host_config.sh` should PASS and
-      `HUB_HOST=192.168.1.192 bash scripts/run_tests.sh` should go fully
-      green. Then promote `FR-001` (with the lid test below) and `FR-003`.
+- [x] **Reboot the hub.** Done 2026-10-12: boot in 14 s, container up 14 s
+      later, `check_host_config.sh` PASS, full suite with `HUB_HOST` 11/11
+      PASS. FR-003 Verified; FR-001 Active with AC-2/AC-3 verified.
 - [ ] Verify the box stays reachable over SSH with the lid closed for 30 min
       (FR-001-AC-1, GAP-001). Only meaningful after the reboot above.
 - [ ] Set a DHCP reservation for `peppermint-patty` on the router so
@@ -135,10 +133,10 @@ Keep entries specific, actionable, and current.
 - [x] Execute `scripts/smoke_check.sh` against the real hub. Done
       2026-10-12 — PASS; GAP-002 closed, FR-002 promoted to Active (In
       Progress until the second-host run).
-- [ ] Close GAP-001: verify the host stays reachable 30+ min with the lid
-      closed (FR-001).
-- [ ] Close GAP-003: verify the stack returns unattended after `sudo reboot`
-      (FR-003).
+- [ ] Close GAP-001's residual: verify the host stays reachable 30+ min with
+      the lid closed (FR-001-AC-1); then mark FR-001 Verified.
+- [x] Close GAP-003. Done 2026-10-12 — stack returned unattended after
+      `sudo reboot`; FR-003 Verified.
 - [x] Close GAP-004. Done 2026-10-12 — compose tier PASS on the hub; FR-004
       promoted to Active and Verified.
 - [x] Executable check for FR-001-AC-2/AC-3 written and unit-tested:

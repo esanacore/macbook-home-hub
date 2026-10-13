@@ -8,6 +8,16 @@ This project follows semantic versioning.
 
 ### Added
 
+- **First unattended reboot passed.** After `sudo reboot` on 2026-10-12 the
+  host booted in 14 s, the `home-assistant` container started 14 s later on
+  its `unless-stopped` policy, and about a minute after boot
+  `HUB_HOST=192.168.1.192 bash scripts/run_tests.sh` reported **11 PASS / 0
+  FAIL / 0 SKIP** — the first fully green run on the hub, with the logind lid
+  policy live and the docker group in session. `FR-003` promoted to Active,
+  Verified; `FR-001` promoted to Active, In Progress (AC-2/AC-3 verified by
+  `check_host_config.sh`, the 30-minute lid test still manual). GAP-003
+  closed; GAP-001 reduced to its manual residual.
+
 - **The hub is running.** On 2026-10-12 the operator ran
   `scripts/provision_host.sh` on the MacBook (logind drop-in, sleep targets
   masked, `openssh-server` 9.6p1, `docker.io` 29.1.3, `docker-compose-v2`

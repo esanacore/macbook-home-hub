@@ -11,11 +11,11 @@ that doubles as a home-automation hub running Home Assistant in Docker.
 The machine's quirk is its strength here: the built-in battery acts as a free
 UPS, so the hub rides through power blips that would hard-cut a Pi or NUC.
 
-Status: running, not yet proven unattended. As of 2026-10-12 the MacBook
-(`peppermint-patty`) runs Linux Mint 22.3 XFCE, is provisioned, and serves
-Home Assistant 2026.8.0 on `:8123`. The first reboot, the lid-closed test and
-onboarding are still ahead. The specific devices and companion services are
-still open.
+Status: running. As of 2026-10-12 the MacBook (`peppermint-patty`) runs
+Linux Mint 22.3 XFCE, is provisioned, serves Home Assistant 2026.8.0 on
+`:8123`, and comes back on its own after a reboot. The lid-closed test,
+onboarding, and a backup job are still ahead. The specific devices and
+companion services are still open.
 
 ## Current Capabilities
 
@@ -41,10 +41,10 @@ Honest snapshot of what this repo covers today. This list grows as the project d
   secret sweeps anywhere; host-config and compose validation on the hub; a
   smoke check (`scripts/smoke_check.sh`) against a running hub.
 
-Not yet: a reboot since provisioning (so the lid policy is not yet live),
-onboarding, a backup job, or any device integrations. Four of twelve
-requirements have a passing check that ran on the hub; the rest wait on
-physical tests — see the gap log in `docs/TEST_PLAN.md` and `TODO.md`.
+Not yet: the 30-minute lid-closed test, onboarding, a backup job, or any
+device integrations. Six of twelve requirements have a passing check that ran
+on the hub; the rest wait on physical tests or adoption decisions — see the
+gap log in `docs/TEST_PLAN.md` and `TODO.md`.
 
 ## Running the Checks
 

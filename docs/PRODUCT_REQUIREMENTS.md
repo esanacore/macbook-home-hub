@@ -113,6 +113,41 @@ rather than by manual inspection.
   - `NFR-004-AC-2`: Checks that cannot run in the current environment report
     `SKIP` and are never counted as passes.
 
+## Always-On Host
+
+**FR-001** `MUST` The host continues running and stays reachable on the network
+with the lid closed and no user logged in.
+
+- Level: `MUST`
+- Verified by: `scripts/check_host_config.sh` (host tier of
+  `scripts/run_tests.sh`), executed on the hub 2026-10-12 after the first
+  post-provisioning reboot — PASS: logind lid policy `ignore` on all three
+  properties, four sleep targets `masked`, XFCE power manager lid/idle actions
+  off. That covers AC-2 and AC-3. AC-1 (30 minutes lid-closed over SSH) is a
+  manual test still to be performed — gap GAP-001 stays open for it.
+- Acceptance criteria:
+  - `FR-001-AC-1`: With the lid closed for at least 30 minutes, the host
+    answers SSH on port 22.
+  - `FR-001-AC-2`: `systemd-inhibit --list` shows no pending sleep or suspend
+    inhibitor that would suspend the machine.
+  - `FR-001-AC-3`: `sleep.target`, `suspend.target`, `hibernate.target`, and
+    `hybrid-sleep.target` all report `masked`.
+
+**FR-003** `MUST` The service stack returns automatically after a host reboot
+or unclean power loss, with no manual step.
+
+- Level: `MUST`
+- Verified by: `sudo reboot` on 2026-10-12 with nobody touching the machine
+  afterwards. Boot finished in 14 s; the `home-assistant` container started
+  14 s after boot (`restart: unless-stopped`); `scripts/smoke_check.sh` via
+  `HUB_HOST=192.168.1.192 bash scripts/run_tests.sh` returned HTTP 302 about
+  one minute after boot. Unclean power loss (NFR-002) is a separate test.
+- Acceptance criteria:
+  - `FR-003-AC-1`: After `sudo reboot`, Home Assistant answers on `:8123`
+    within 5 minutes with no human intervention.
+  - `FR-003-AC-2`: Every service in the compose file declares a restart policy
+    of `unless-stopped` or `always`.
+
 ## Home Assistant Service
 
 **FR-002** `MUST` Home Assistant is reachable over HTTP on port 8123 from the
@@ -149,40 +184,14 @@ files in this repository, not configured ad hoc on the machine.
 
 # Deferred Requirements
 
-**Blocked on physical tests.** The MacBook is imaged and the stack is running
-(2026-10-12), but every requirement below needs something only a person on
-site can do — close the lid for half an hour, reboot, pull the mains plug,
-restore onto a second machine, inspect the router. Each is tracked as an open
-gap in `docs/TEST_PLAN.md`.
+**Blocked on physical tests or decisions.** The MacBook is imaged, the stack
+is running and has survived a reboot (2026-10-12). Every requirement below
+needs something only a person can do — pull the mains plug, restore onto a
+second machine, inspect the router, choose devices. Each open one is tracked
+as a gap in `docs/TEST_PLAN.md`.
 
 These are real commitments, not aspirations. They move into the active section
 above as the hub is built, following the promotion procedure.
-
-## Always-On Host
-
-`FR-001` `MUST` The host continues running and stays reachable on the network
-with the lid closed and no user logged in.
-
-- Level: `MUST`
-- Blocked by: no machine to close the lid of. Gap: GAP-001.
-- Acceptance criteria:
-  - `FR-001-AC-1`: With the lid closed for at least 30 minutes, the host
-    answers SSH on port 22.
-  - `FR-001-AC-2`: `systemd-inhibit --list` shows no pending sleep or suspend
-    inhibitor that would suspend the machine.
-  - `FR-001-AC-3`: `sleep.target`, `suspend.target`, `hibernate.target`, and
-    `hybrid-sleep.target` all report `masked`.
-
-`FR-003` `MUST` The service stack returns automatically after a host reboot
-or unclean power loss, with no manual step.
-
-- Level: `MUST`
-- Blocked by: no host to reboot. Gap: GAP-003.
-- Acceptance criteria:
-  - `FR-003-AC-1`: After `sudo reboot`, Home Assistant answers on `:8123`
-    within 5 minutes with no human intervention.
-  - `FR-003-AC-2`: Every service in the compose file declares a restart policy
-    of `unless-stopped` or `always`.
 
 ## Home Assistant Companions
 

@@ -23,6 +23,45 @@ that gets edited after the fact stops being evidence.
 
 ## Handoff Log
 
+### Session: 2026-10-12 (after reboot) — Claude (Claude Code), on the hub
+
+**Accomplishments**
+
+- The operator rebooted; the session resumed with `claude --continue`.
+  `check_host_config.sh` PASS (all 16 lines OK) and
+  `HUB_HOST=192.168.1.192 bash scripts/run_tests.sh` **11 PASS / 0 FAIL /
+  0 SKIP** — first fully green run on the hub. Boot 14 s, container up 14 s
+  after boot, HTTP 302 about a minute after boot, nobody touched it.
+- Promoted `FR-003` (Active, Verified) and `FR-001` (Active, In Progress —
+  AC-2/AC-3 verified, lid test pending). Closed GAP-003; GAP-001 reduced to its
+  AC-1 residual. Matrix, test plan, inventory, TODO, README, CHANGELOG updated.
+
+**Pending Work**
+
+- Manual residuals: FR-001-AC-1 (30 min lid-closed over SSH) and FR-002-AC-1
+  (curl from a second LAN host). Onboarding. gbrain on this machine.
+- Constitution submodule is BEHIND (pinned 1.52.0, upstream 1.53.0); the
+  session-start hook and the `version-gate` CI job both say so, and master
+  fails the same gate. Handle as its own bump PR per repository precedent.
+- Release: `CHANGELOG.md` Unreleased is large and the hub is verifiably
+  serving — cut `0.2.0` after PR #17 merges (see Next Steps).
+
+**Verification Run**
+
+- Ran on the hub after reboot: `check_host_config.sh`, full `run_tests.sh`
+  with `HUB_HOST`, `check_traceability.sh`, `pre-commit run --all-files`,
+  `check_next_steps.sh`.
+- Not run: lid-close, power-cut, restore, router inspection, onboarding.
+
+**Instructions for Next Agent**
+
+The host side is done. The next substantive work is operational: a backup
+job for `config/` to another machine with a tested restore (FR-007,
+GAP-005), and the root-owned-files decision (`PUID`/`PGID`). Promote
+`FR-001` to Verified only when the operator reports the lid test, and
+`FR-002` only after a second-host curl. Do not touch the lid policy from a
+desktop session.
+
 ### Session: 2026-10-12 (continued) — Claude (Claude Code), on the hub
 
 **Accomplishments**
@@ -128,33 +167,28 @@ of the script existing.
 
 ## Next Steps
 
-**Human action required:** steps 1, 3, 4, 6 and 7.
+**Human action required:** steps 1, 2, 4, 5 and 6.
 
-1. [ ] **HUMAN** — Reboot the hub
-   - **Why a human:** a reboot ends every session on the machine, including the agent's; only the operator should choose the moment.
-   - **You need:** to be at `peppermint-patty`, the sudo password.
-   - **Procedure:**
-     1. `sudo reboot`
-     2. Wait 2 minutes, then from the hub (or over SSH) `cd ~/macbook-home-hub && bash scripts/check_host_config.sh`.
-     3. `HUB_HOST=192.168.1.192 bash scripts/run_tests.sh`
-   - **Done when:** `check_host_config.sh` prints `Host configuration check PASSED` and the suite reports 0 failed.
-2. [ ] **AGENT** — Record the reboot result: promote `FR-003` (stack returned unattended; note `uptime` and time-to-302), move `FR-001`'s AC-2/AC-3 to verified, update the gap log and coverage row _(blocked by step 1)_
-3. [ ] **HUMAN** — Lid-closed reachability test (FR-001-AC-1) _(blocked by step 1)_
-   - **Why a human:** someone has to physically close the lid and SSH in from another machine.
+1. [ ] **HUMAN** — Lid-closed reachability test (FR-001-AC-1) and second-host check (FR-002-AC-1)
+   - **Why a human:** someone has to physically close the lid and connect from another machine.
    - **You need:** a second machine on the LAN with an SSH client.
    - **Procedure:**
      1. From the other machine: `ssh esanacore@192.168.1.192`, leave it open.
-     2. Also run `HUB_HOST=192.168.1.192 bash scripts/smoke_check.sh` there (or `curl -sI http://192.168.1.192:8123/`) — this satisfies `FR-002-AC-1` from a second host.
-     3. Close the lid. Wait 30 minutes. Run `uptime` in the SSH session.
-   - **Done when:** SSH answered after 30+ minutes lid-closed and the curl from the second host returned 2xx/3xx. Tell the next agent so `FR-001` and `FR-002` can be marked Verified.
-4. [ ] **HUMAN** — Complete Home Assistant onboarding
+     2. There too: `curl -sI http://192.168.1.192:8123/ | head -1` — expect `HTTP/1.1 302`.
+     3. Close the hub's lid. Wait 30 minutes. Run `uptime` in the SSH session.
+   - **Done when:** SSH answered after 30+ minutes lid-closed and the curl returned 2xx/3xx. Tell the next agent so `FR-001` and `FR-002` can be marked Verified and GAP-001 closed.
+2. [ ] **HUMAN** — Complete Home Assistant onboarding
    - **Why a human:** creates the owner account, a credential the agent must not hold.
    - **Done when:** `http://192.168.1.192:8123` shows the dashboard after login.
-5. [ ] **AGENT** _(suggestion)_ — Decide root-owned `config/` files vs `PUID`/`PGID`; harden SSH to key-only auth once a key is on the box; set up a backup job (FR-007).
-6. [ ] **HUMAN** — Run `/setup-gbrain` in this repository on the hub
-   - **Why a human:** needs the Supabase password, which lives only in the other machine's `~/.gbrain/config.json`.
-   - **Done when:** `bash scripts/check_gbrain_state.sh` reports OK on `peppermint-patty`.
-7. [ ] **HUMAN** — Review and merge PR #17, then close PR #10 as superseded (its three commits are merged into #17) and delete `docs/broadcom-driver-correction`
+3. [ ] **AGENT** — Mark `FR-001`/`FR-002` Verified and close GAP-001 once step 1 is reported; then cut release `0.2.0` (bump `VERSION`, move `Unreleased` to a dated section, tag) _(blocked by step 1)_
+4. [ ] **HUMAN** — Review and merge PR #17, then close PR #10 as superseded (its three commits are merged into #17) and delete `docs/broadcom-driver-correction`
    - **Why a human:** merges, PR closure and branch deletion are the maintainer's decision.
    - **Done when:** #17 merged, #10 closed, and `origin/docs/broadcom-driver-correction` is gone.
-8. [ ] **AUTOMATED** — CI (`constitution-*.yml`) runs on the PR; watch `constitution-tests`, `constitution-doc-freshness` and the traceability gate (now gating four IDs).
+5. [ ] **HUMAN** — Run `/setup-gbrain` in this repository on the hub
+   - **Why a human:** needs the Supabase password, which lives only in the other machine's `~/.gbrain/config.json`.
+   - **Done when:** `bash scripts/check_gbrain_state.sh` reports OK on `peppermint-patty`.
+6. [ ] **HUMAN** — Approve the constitution bump to 1.53.0 when its PR appears (or ask an agent to open it); `version-gate` fails on master until then
+   - **Why a human:** the bump is a separate PR that needs review and merge.
+   - **Done when:** `version-gate` is green on master.
+7. [ ] **AGENT** _(suggestion)_ — Backup job for `config/` to another machine with a tested restore (FR-007); decide `PUID`/`PGID` vs root-owned config files; key-only SSH.
+8. [ ] **AUTOMATED** — CI (`constitution-*.yml`) runs on the PR; the traceability gate now covers six IDs.
