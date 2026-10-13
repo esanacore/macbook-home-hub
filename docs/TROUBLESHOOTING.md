@@ -123,11 +123,14 @@ see `TODO.md`.
 
 ## Docker and Home Assistant
 
-### Home Assistant does not answer on :8123 (anticipated)
+### Home Assistant does not answer on :8123 (anticipated; healthy baseline observed)
 
 - **Symptoms**: `curl http://<hub-ip>:8123` refuses the connection.
-- **Cause**: Usually the container is not running, is still starting (first
-  boot takes minutes), or is bound to the wrong network mode.
+- **Baseline (observed 2026-10-12)**: on first start the container answered
+  HTTP 302 within about 10 seconds of `Started`. Minutes of silence is *not*
+  normal on this machine.
+- **Cause**: Usually the container is not running, is still starting, or is
+  bound to the wrong network mode.
 - **Fix**: Work outward from the container:
   ```bash
   docker compose ps                       # is it up, or restarting?
@@ -137,6 +140,21 @@ see `TODO.md`.
   A container stuck in a restart loop is a configuration error — read the log
   before restarting it again. Local device discovery generally requires
   `network_mode: host`; on a bridge network HA will start but find nothing.
+
+### Red Bluetooth traceback in the Home Assistant log (observed)
+
+- **Symptoms**: Right after start, `docker compose logs home-assistant` shows
+  `ERROR ... [habluetooth.manager] Missing required permissions for Bluetooth
+  management` and a `PermissionError: Missing NET_ADMIN/NET_RAW capabilities`
+  traceback.
+- **Cause**: `default_config:` loads the Bluetooth integration, which probes
+  for an adapter it can manage; the container has no extra capabilities and
+  no D-Bus socket mounted. Observed on first start 2026-10-12; Home Assistant
+  served normally regardless.
+- **Fix**: None needed unless Bluetooth devices are adopted. If they are, the
+  Container install needs `cap_add: [NET_ADMIN, NET_RAW]` and
+  `/run/dbus:/run/dbus:ro` in the compose file — record that as an ADR-level
+  change, since it widens the container's privileges.
 
 ### Devices are not discovered (anticipated)
 

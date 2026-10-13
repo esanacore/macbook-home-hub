@@ -29,16 +29,20 @@ Keep entries specific, actionable, and current.
 - [x] XFCE power manager set to never suspend (lid = nothing, idle = never,
       keeps its own lid inhibitor). Done 2026-10-12 via `xfconf-query`; see
       `docs/SETUP.md` step 4.
-- [ ] **Run `sudo bash scripts/provision_host.sh` on the hub** (human: needs
-      the sudo password). It writes the logind lid drop-in, masks the sleep
-      targets, installs `openssh-server`, `docker.io`, `docker-compose-v2`,
-      enables both services and adds the user to `docker`. Then log out/in (or
-      reboot) and run `bash scripts/check_host_config.sh` — it was run
-      2026-10-12 before provisioning and FAILed every root-level item, which
-      is the expected baseline.
+- [x] **`sudo bash scripts/provision_host.sh` run on the hub 2026-10-12**
+      (operator, in a terminal window). Logind drop-in written, four sleep
+      targets masked, `openssh-server` 9.6p1 / `docker.io` 29.1.3 /
+      `docker-compose-v2` 2.40.3 installed, `ssh.socket` + `docker` enabled,
+      user added to `docker`. `check_host_config.sh` afterwards: sleep
+      targets, docker, ssh OK; logind still `suspend` and group membership
+      not yet in the session — both clear at the first reboot.
+- [ ] **Reboot the hub** (`sudo reboot`). This applies the logind drop-in,
+      picks up the docker group, and is the FR-003 unattended-restart test:
+      afterwards `bash scripts/check_host_config.sh` should PASS and
+      `HUB_HOST=192.168.1.192 bash scripts/run_tests.sh` should go fully
+      green. Then promote `FR-001` (with the lid test below) and `FR-003`.
 - [ ] Verify the box stays reachable over SSH with the lid closed for 30 min
-      (FR-001-AC-1, GAP-001). Only meaningful after the item above and a
-      reboot.
+      (FR-001-AC-1, GAP-001). Only meaningful after the reboot above.
 - [ ] Set a DHCP reservation for `peppermint-patty` on the router so
       `192.168.1.192` stops being an assumption in the docs.
 - [ ] Harden SSH after it is installed: key-only auth
@@ -61,8 +65,21 @@ Keep entries specific, actionable, and current.
       had its own ignore-everything `.gitignore`) to `../config`, the
       repository-root `config/` that README and `.gitignore` describe, so
       hand-authored YAML can be tracked while runtime state is ignored.
-      `docker compose config` validation still pending Docker (GAP-004).
-- [ ] Bring HA up, complete onboarding, confirm reachable at `:8123`.
+      `docker compose config` PASS on the hub 2026-10-12; GAP-004 closed.
+- [x] Bring HA up and confirm reachable at `:8123`. Done 2026-10-12:
+      `ghcr.io/home-assistant/home-assistant:2026.8.0` pulled and started,
+      HTTP 302 within ~10 s, `smoke_check.sh` PASS against `192.168.1.192`.
+      Starter YAML (`configuration.yaml`, `automations.yaml`, `scenes.yaml`,
+      `scripts.yaml`) committed as the hand-authored layer.
+- [ ] Complete Home Assistant onboarding in a browser at
+      `http://192.168.1.192:8123` (creates the owner account — human).
+- [ ] Run `HUB_HOST=192.168.1.192 bash scripts/smoke_check.sh` from a
+      **second** LAN machine to satisfy FR-002-AC-1 literally; then mark
+      FR-002 Verified.
+- [ ] HA writes `config/` files as root (`default_config` starter files are
+      `root:root 644`). Decide whether to run the container with `PUID`/`PGID`
+      or accept root-owned files and edit via `sudo`; see `docs/ENV_VARS.md`
+      Anticipated Variables.
 - [ ] Decide whether Mosquitto (MQTT) is needed based on chosen devices; add
       container if so.
 - [ ] Evaluate Node-RED as optional flow editor.
@@ -115,20 +132,21 @@ Keep entries specific, actionable, and current.
 - [x] Define what "tests" mean for a config repo — declared in
       `docs/TEST_PLAN.md`, implemented as `scripts/run_tests.sh` (static +
       config tiers) and `scripts/smoke_check.sh` (host tier).
-- [ ] Execute `scripts/smoke_check.sh` against the real hub. It is written but
-      has never run against hardware, so FR-002 stays a gap (GAP-002).
+- [x] Execute `scripts/smoke_check.sh` against the real hub. Done
+      2026-10-12 — PASS; GAP-002 closed, FR-002 promoted to Active (In
+      Progress until the second-host run).
 - [ ] Close GAP-001: verify the host stays reachable 30+ min with the lid
       closed (FR-001).
 - [ ] Close GAP-003: verify the stack returns unattended after `sudo reboot`
       (FR-003).
-- [ ] Close GAP-004: run `docker compose -f compose/docker-compose.yml config
-      --quiet` on the hub once Docker is installed, then promote `FR-004`
-      (FR-004).
+- [x] Close GAP-004. Done 2026-10-12 — compose tier PASS on the hub; FR-004
+      promoted to Active and Verified.
 - [x] Executable check for FR-001-AC-2/AC-3 written and unit-tested:
       `scripts/check_host_config.sh` + `scripts/test_check_host_config.sh`
       (19 cases), wired into `scripts/run_tests.sh` as a blocking host-tier
-      check on the hub, SKIP elsewhere. Done 2026-10-12. It has run on the hub
-      and failed (pre-provisioning) — promotion waits for a pass.
+      check on the hub, SKIP elsewhere. Done 2026-10-12. After provisioning
+      it passes everything except the two items that need a reboot (logind
+      live value, docker group in session).
 - [ ] Close GAP-005: perform a real restore from backup onto a clean target
       (FR-007). An untested restore is not a backup.
 - [ ] Close GAP-006: pull mains power for 10 minutes and confirm the hub keeps

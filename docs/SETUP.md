@@ -227,25 +227,38 @@ bash scripts/check_host_config.sh        # docker + ssh items should now be OK
 
 ### 7. Bring up Home Assistant
 
-Not run yet. From the repository root:
+Run 2026-10-12, from the repository root. Until you have logged out and back
+in after step 6, prefix Docker commands with `sg docker -c '...'` so the new
+group applies to that command without a new session:
 
 ```bash
-docker compose -f compose/docker-compose.yml config --quiet   # validate first (closes GAP-004)
-docker compose -f compose/docker-compose.yml up -d
+docker compose -f compose/docker-compose.yml config --quiet   # validate first — PASS
+docker compose -f compose/docker-compose.yml up -d            # pulls ~2 GB; a few minutes on this Wi-Fi
 docker compose -f compose/docker-compose.yml logs -f home-assistant
 ```
 
-The config bind mount is the repository-root `config/` directory, which
-`.gitignore` already protects. Complete onboarding at `http://<hub-ip>:8123`
-(this machine: `192.168.1.192`). First start takes several minutes. Then run
-the smoke check from another machine on the LAN:
+Observed: `:8123` answered **HTTP 302** (redirect to onboarding) about 10
+seconds after the container started — much faster than the "several minutes"
+the earlier draft expected. The first log lines include a red
+`habluetooth ... Missing NET_ADMIN/NET_RAW capabilities for Bluetooth
+management` traceback; it is harmless (no Bluetooth integration is configured;
+see `docs/TROUBLESHOOTING.md`). Home Assistant wrote its starter files into
+`config/` as **root**: `configuration.yaml`, `automations.yaml`,
+`scenes.yaml`, `scripts.yaml` (tracked — they are the hand-authored layer),
+and `secrets.yaml`, `.storage/`, the SQLite database, logs and `.ha_run.lock`
+(all gitignored). Then the smoke check:
 
 ```bash
-HUB_HOST=192.168.1.192 bash scripts/smoke_check.sh
+HUB_HOST=192.168.1.192 bash scripts/smoke_check.sh    # PASS: ping OK, HTTP 302, container running
 ```
+
+That run was from the hub itself against its LAN address. `FR-002-AC-1` wants
+the same result from a second machine on the LAN — do that once from your
+laptop. Complete onboarding in a browser at `http://192.168.1.192:8123`.
 
 ## Environment Variables
 
-This project declares no environment variables yet. When the compose stack
-introduces them, document each one in `docs/ENV_VARS.md` in the same change —
-`constitution/scripts/check_env_vars.sh` enforces this.
+The compose stack declares one variable, `TZ`, documented in
+`docs/ENV_VARS.md`. Any variable added to a manifest must be documented there
+in the same change — `constitution/scripts/check_env_vars.sh` enforces this
+for root-level manifests.

@@ -38,11 +38,11 @@ Software the project depends on that is **not** declared in a dependency manifes
 | Component ID | Name | Version | Supplier / Maintainer | Purpose | Risk | Verification | Anomaly Review | Update Policy | Status |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | OTS-001 | Linux Mint XFCE | 22.3 "Zena", kernel 7.0.0-38-generic | Linux Mint project | Host operating system for the hub | Medium | Observed 2026-10-12: installed on the `MacBook8,1`, boots, Wi-Fi up via in-tree `brcmfmac`, ran this repository's full static test tier. Lid-closed uptime (FR-001) still to be observed. | Distro security advisories; last reviewed 2026-10-12 | Track LTS; manual major-version upgrades | Active |
-| OTS-002 | Docker Engine (`docker.io` + `docker-compose-v2`) | 29.1.3 / Compose 2.40.3 (Mint 22 repo candidates as of 2026-10-12) | Docker, Inc. via Ubuntu/Mint packaging | Container runtime hosting all services | Medium | Runs with elevated privileges; verified by containers coming up and surviving reboot. Install is scripted in `scripts/provision_host.sh`; not yet run. | Docker security advisories / CVE feed; last reviewed 2026-10-12 | Distro apt repo (not Docker's), manual review before major bumps | Evaluating |
-| OTS-003 | ghcr.io/home-assistant/home-assistant | 2026.8.0 | Open Home Foundation | The home-automation platform itself | Medium | Parses device input on the LAN; verified via first-boot onboarding and integration smoke test | HA release notes / breaking-change notices; last reviewed 2026-08-15 | Pinned to a dated tag in `compose/docker-compose.yml`; upgrade deliberately with a config snapshot | Evaluating |
+| OTS-002 | Docker Engine (`docker.io` + `docker-compose-v2`) | 29.1.3 / Compose 2.40.3 (Mint 22 repo candidates as of 2026-10-12) | Docker, Inc. via Ubuntu/Mint packaging | Container runtime hosting all services | Medium | Runs with elevated privileges. Observed 2026-10-12: installed by `scripts/provision_host.sh`, daemon enabled, `docker compose config` passes, `home-assistant` container running. Surviving a reboot (FR-003) still to be observed. | Docker security advisories / CVE feed; last reviewed 2026-10-12 | Distro apt repo (not Docker's), manual review before major bumps | Active |
+| OTS-003 | ghcr.io/home-assistant/home-assistant | 2026.8.0 | Open Home Foundation | The home-automation platform itself | Medium | Parses device input on the LAN. Observed 2026-10-12: first start answered HTTP 302 on `:8123` within ~10 s of container start; `scripts/smoke_check.sh` PASS. Onboarding (owner account) not yet completed. | HA release notes / breaking-change notices; last reviewed 2026-10-12 | Pinned to a dated tag in `compose/docker-compose.yml`; upgrade deliberately with a config snapshot | Active |
 | OTS-004 | eclipse-mosquitto | latest stable | Eclipse Foundation | MQTT broker for device messaging (planned) | Medium | Not yet deployed | Eclipse security advisories | Pin stable tag when adopted | Evaluating |
 | OTS-005 | nodered/node-red | latest stable | OpenJS Foundation | Automation flow editor (planned, optional) | Medium | Not yet deployed | Node-RED advisories | Pin stable tag when adopted | Evaluating |
-| OTS-006 | openssh-server | 1:9.6p1 (Mint 22 repo candidate as of 2026-10-12) | OpenBSD / Ubuntu packaging | Remote administration of the hub (FR-001-AC-1 is defined in terms of SSH answering) | Medium | Listens on the LAN with distro defaults (password auth enabled). Install is scripted in `scripts/provision_host.sh`; not yet run. Hardening to key-only auth is tracked in `TODO.md`. | Ubuntu security advisories; last reviewed 2026-10-12 | Distro apt repo | Evaluating |
+| OTS-006 | openssh-server | 1:9.6p1 (Mint 22 repo candidate as of 2026-10-12) | OpenBSD / Ubuntu packaging | Remote administration of the hub (FR-001-AC-1 is defined in terms of SSH answering) | Medium | Listens on the LAN with distro defaults (password auth enabled). Observed 2026-10-12: installed by `scripts/provision_host.sh`, `ssh.socket` enabled, sshd answering on :22 (local connection reached authentication). Hardening to key-only auth is tracked in `TODO.md`. | Ubuntu security advisories; last reviewed 2026-10-12 | Distro apt repo | Active |
 
 ### Risk Note
 
@@ -62,9 +62,8 @@ be revisited in the same change.
 ### Verification Caveat
 
 For every `Evaluating` row the Verification column describes how fitness
-*will* be established. Only OTS-001 (the host OS) is `Active`: it is the one
-component observed running on the hub as of 2026-10-12. Status moves from
-`Evaluating` to `Active` only once the component is running on the hub and its
-verification has been observed — Docker and OpenSSH move when
-`scripts/check_host_config.sh` passes on the hub, Home Assistant when
-`scripts/smoke_check.sh` does.
+*will* be established. OTS-001 (host OS), OTS-002 (Docker), OTS-003 (Home
+Assistant) and OTS-006 (OpenSSH) are `Active`: each was observed running on
+the hub on 2026-10-12 and its stated check ran. Mosquitto and Node-RED remain
+`Evaluating` because they have not been adopted. Status moves to `Active` only
+once a component is running on the hub and its verification has been observed.

@@ -113,14 +113,47 @@ rather than by manual inspection.
   - `NFR-004-AC-2`: Checks that cannot run in the current environment report
     `SKIP` and are never counted as passes.
 
+## Home Assistant Service
+
+**FR-002** `MUST` Home Assistant is reachable over HTTP on port 8123 from the
+LAN.
+
+- Level: `MUST`
+- Verified by: `scripts/smoke_check.sh` with `HUB_HOST=192.168.1.192`,
+  executed on the hub 2026-10-12 — HTTP 302 (onboarding redirect) on `:8123`,
+  container `running`. AC-1 has so far been exercised from the hub against its
+  own LAN address; a run from a second LAN host is the remaining step.
+- Acceptance criteria:
+  - `FR-002-AC-1`: `curl http://<hub-ip>:8123/` returns a 2xx or 3xx status
+    from another machine on the LAN.
+  - `FR-002-AC-2`: The `home-assistant` container reports a `running` state,
+    not a restart loop.
+
+**FR-004** `MUST` The hub's configuration is declared in version-controlled
+files in this repository, not configured ad hoc on the machine.
+
+- Level: `MUST`
+- Verified by: the compose tier of `scripts/run_tests.sh`
+  (`docker compose -f compose/docker-compose.yml config --quiet`), executed on
+  the hub 2026-10-12 — PASS. Image tag `2026.8.0`; bind mount `../config`
+  (repository-root `config/`), whose hand-authored YAML is tracked.
+- Acceptance criteria:
+  - `FR-004-AC-1`: `compose/docker-compose.yml` exists, is committed, and
+    passes `docker compose config`.
+  - `FR-004-AC-2`: Every image is pinned to a dated stable tag, never
+    `latest`.
+  - `FR-004-AC-3`: The Home Assistant config directory is a bind mount from
+    the repository-adjacent `config/` path.
+
 ---
 
 # Deferred Requirements
 
-**Blocked on hardware.** The MacBook has not been imaged. Every requirement
-below describes behavior of a running machine, so none can be verified by any
-amount of work in this repository. Each is tracked as an open gap in
-`docs/TEST_PLAN.md`.
+**Blocked on physical tests.** The MacBook is imaged and the stack is running
+(2026-10-12), but every requirement below needs something only a person on
+site can do — close the lid for half an hour, reboot, pull the mains plug,
+restore onto a second machine, inspect the router. Each is tracked as an open
+gap in `docs/TEST_PLAN.md`.
 
 These are real commitments, not aspirations. They move into the active section
 above as the hub is built, following the promotion procedure.
@@ -151,35 +184,7 @@ or unclean power loss, with no manual step.
   - `FR-003-AC-2`: Every service in the compose file declares a restart policy
     of `unless-stopped` or `always`.
 
-## Home Assistant Service
-
-`FR-002` `MUST` Home Assistant is reachable over HTTP on port 8123 from the
-LAN.
-
-- Level: `MUST`
-- Blocked by: `scripts/smoke_check.sh` exists but has never executed against a
-  running hub. Gap: GAP-002.
-- Acceptance criteria:
-  - `FR-002-AC-1`: `curl http://<hub-ip>:8123/` returns a 2xx or 3xx status
-    from another machine on the LAN.
-  - `FR-002-AC-2`: The `home-assistant` container reports a `running` state,
-    not a restart loop.
-
-`FR-004` `MUST` The hub's configuration is declared in version-controlled
-files in this repository, not configured ad hoc on the machine.
-
-- Level: `MUST`
-- Blocked by: `compose/docker-compose.yml` now exists, but `docker compose
-  config` has never been observed passing — Docker is not installed on the
-  authoring machine, so the compose tier of the suite still SKIPs. Gap:
-  GAP-004.
-- Acceptance criteria:
-  - `FR-004-AC-1`: `compose/docker-compose.yml` exists, is committed, and
-    passes `docker compose config`.
-  - `FR-004-AC-2`: Every image is pinned to a dated stable tag, never
-    `latest`.
-  - `FR-004-AC-3`: The Home Assistant config directory is a bind mount from
-    the repository-adjacent `config/` path.
+## Home Assistant Companions
 
 `FR-005` `SHOULD` An MQTT broker is available for devices that speak MQTT
 rather than a native integration.

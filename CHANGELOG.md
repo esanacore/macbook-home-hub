@@ -8,6 +8,31 @@ This project follows semantic versioning.
 
 ### Added
 
+- **The hub is running.** On 2026-10-12 the operator ran
+  `scripts/provision_host.sh` on the MacBook (logind drop-in, sleep targets
+  masked, `openssh-server` 9.6p1, `docker.io` 29.1.3, `docker-compose-v2`
+  2.40.3, `ssh.socket` and `docker` enabled, user in `docker`), and Home
+  Assistant `2026.8.0` was pulled and started. `docker compose config` passed,
+  `:8123` answered HTTP 302 about 10 seconds after container start, and
+  `scripts/smoke_check.sh` passed against `192.168.1.192`. The full suite with
+  `HUB_HOST` set reports 10 PASS / 1 FAIL / 0 SKIP — the one FAIL is the
+  host-config tier waiting on the first reboot (logind lid policy, docker
+  group).
+- **`FR-002` and `FR-004` promoted to Active** on the strength of checks that
+  ran on the hub; GAP-002 and GAP-004 closed. `FR-004` is Verified; `FR-002`
+  is In Progress until the smoke check is repeated from a second LAN host as
+  its acceptance criterion literally states. `FR-001` stays deferred with an
+  executed-but-failing check.
+- `docs/OTS_SOFTWARE.md`: Docker, Home Assistant and OpenSSH → **Active**.
+- Home Assistant's starter `configuration.yaml`, `automations.yaml`,
+  `scenes.yaml`, `scripts.yaml` committed from `config/` as the hand-authored
+  configuration layer; `.ha_run.lock` added to `.gitignore`.
+- `docs/TROUBLESHOOTING.md`: observed first-start baseline (302 in ~10 s) and
+  a new entry for the harmless Bluetooth `NET_ADMIN/NET_RAW` traceback.
+- `.pre-commit-config.yaml`: whitespace fixers skip `config/` (Home Assistant
+  writes those files as root and rewrites them itself) and `check-yaml` runs
+  with `--unsafe` so HA's `!include` / `!secret` tags parse as a syntax check.
+
 - **First run on the hub.** The `MacBook8,1` (`peppermint-patty`) was imaged
   with Linux Mint 22.3 XFCE on 2026-10-12 and this repository was set up on it
   per `docs/SETUP.md` Part 1: constitution submodule initialized, Git identity

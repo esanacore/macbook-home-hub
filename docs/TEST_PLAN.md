@@ -115,7 +115,8 @@ security-sensitive code) at that time.
 | Date | Requirements with executable checks | Governance checks | Notes |
 | --- | --- | --- | --- |
 | 2026-08-15 | 2 of 12 executed (2 of 8 `MUST`); 2 more written but unproven | 0 WARN, 0 MISSING | Baseline. Hardware not yet provisioned, so all host-dependent requirements are unverified by construction. |
-| 2026-10-12 | 2 of 12 executed (unchanged); 3 written but unproven (`FR-001` joins `FR-002`, `FR-004`) | 0 WARN, 0 MISSING | First run **on the hub** (Mint 22.3 installed). `check_host_config.sh` executed and reported FAIL on every root-level item because `provision_host.sh` has not been run yet — recorded as the honest state, not a pass. Nothing promoted. |
+| 2026-10-12 (before provisioning) | 2 of 12 executed (unchanged); 3 written but unproven (`FR-001` joins `FR-002`, `FR-004`) | 0 WARN, 0 MISSING | First run **on the hub** (Mint 22.3 installed). `check_host_config.sh` executed and reported FAIL on every root-level item because `provision_host.sh` had not been run yet — recorded as the honest state, not a pass. Nothing promoted. |
+| 2026-10-12 (after provisioning) | 4 of 12 with a passing executed check (4 of 8 `MUST`); `FR-001`'s check executed, failing until reboot | 0 WARN, 0 MISSING | `provision_host.sh` run by the operator; Home Assistant 2026.8.0 pulled and started. Full suite with `HUB_HOST`: 10 PASS, 1 FAIL (host config — logind pending reboot, docker group pending re-login), 0 SKIP. `FR-002` and `FR-004` promoted. |
 
 A downward trend is a signal to investigate, even when the number stays above
 the floor.
@@ -131,9 +132,9 @@ tests, not on hardware.
 | Gap ID | Area / behavior | Risk | Related requirement | Status | TODO ref |
 | --- | --- | --- | --- | --- | --- |
 | GAP-001 | Host stays reachable with the lid closed. Machine now exists; `scripts/check_host_config.sh` covers AC-2/AC-3 mechanically and ran 2026-10-12 — FAIL until `provision_host.sh` is run and the box rebooted. AC-1 (30 min lid-closed over SSH) remains a manual test. | High | FR-001 | Open | TODO.md → Provisioning |
-| GAP-002 | Home Assistant answers on `:8123`. `scripts/smoke_check.sh` exists but has never executed against a real hub. | High | FR-002 | Open | TODO.md → Services |
+| GAP-002 | Home Assistant answers on `:8123`. | High | FR-002 | **Closed 2026-10-12** — `smoke_check.sh` executed on the hub against `192.168.1.192`: HTTP 302, container running. Residual: AC-1 from a second LAN host (tracked under FR-002 in `TODO.md`). | TODO.md → Services |
 | GAP-003 | Stack returns automatically after an unclean reboot. No restart-policy test. | High | FR-003 | Open | TODO.md → Services |
-| GAP-004 | Compose file validity. `docker compose config` is wired into the suite but skips — Docker is not installed yet (`provision_host.sh` installs it). | Medium | FR-004 | Open | TODO.md → Services |
+| GAP-004 | Compose file validity. | Medium | FR-004 | **Closed 2026-10-12** — compose tier executed on the hub, PASS. | — |
 | GAP-005 | Backup and restore actually round-trip. No backup job exists, so restore has never been exercised. An untested restore is not a backup. | High | FR-007 | Open | TODO.md → Operations |
 | GAP-006 | Battery carries the hub through a power cut. Requires deliberately pulling power. | Medium | NFR-002 | Open | TODO.md → Operations |
 | GAP-007 | Resource headroom under real automation load on 8 GB. No baseline measured. | Low | NFR-003 | Open | TODO.md → Operations |
@@ -150,18 +151,17 @@ Every requirement ID maps to its verifying check in
 `docs/REQUIREMENTS_TRACEABILITY.md`. Requirements with no verifying test are
 gaps and appear in the gap log above.
 
-Current state: 12 requirements, 2 with an executed verifying check (NFR-001,
-NFR-004), 10 gaps. Three of those gaps (`FR-001`, `FR-002`, `FR-004`) have a
-check written but not yet passed on the hub — counted as gaps on purpose,
-because a check that has not passed has proven nothing. (`FR-001`'s check has
-*executed* on the hub and failed, which is the expected pre-provisioning
-result.)
+Current state: 12 requirements, 4 with a passing executed verifying check
+(NFR-001, NFR-004, FR-002, FR-004), 8 gaps. One gap (`FR-001`) has a check
+that has executed on the hub and failed — logind's lid policy applies at the
+next boot — which counts as a gap on purpose: a check that has not passed has
+proven nothing.
 
-The 10 gapped requirements are **Deferred** in `docs/PRODUCT_REQUIREMENTS.md`
+The 8 gapped requirements are **Deferred** in `docs/PRODUCT_REQUIREMENTS.md`
 (backticked IDs), which places them outside the blocking CI gate while keeping
-them fully documented here and in the matrix. The 2 verified ones are
-**Active** and gated: CI fails if either loses its verifying test, or if a new
-requirement is promoted to Active without one.
+them fully documented here and in the matrix. The 4 Active ones are gated: CI
+fails if any loses its verifying test, or if a new requirement is promoted to
+Active without one.
 
 `constitution/scripts/check_traceability.sh` prints the deferred set on every
 run under "matrix rows with no matching declared requirement," so the gap
