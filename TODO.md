@@ -12,38 +12,56 @@ Keep entries specific, actionable, and current.
       **Samsung PSSD T7** (serial `S6XGNS0TC00592P`) at 317 MB/s. All 1294
       files pass Mint's own `md5sum.txt` manifest. The Verbatim stick that was
       tried first is dead — see the media item under Testing below.
-- [ ] Boot the MacBook8,1 from the T7: shut down fully, hold `Option`/`Alt`,
-      select **EFI Boot**. The T7 is USB-C native, so it can connect directly
-      without the hub — one less variable at Apple's boot picker.
-- [ ] Reclaim the T7's capacity after the install. `dd` replaced its partition
-      table, so 1.8 TB currently presents as a 2.8 GB volume; repartition and
-      reformat once the MacBook no longer needs the media.
-- [ ] Have a USB-C hub in hand as a fallback (single port on the machine). A
-      USB Ethernet adapter is optional insurance rather than a hard
-      prerequisite; see the Broadcom finding below. Note the MacBook has no
-      built-in Ethernet, so the adapter only helps via the hub.
-- [ ] **Confirm the Broadcom finding on real hardware.** ISO inspection on
-      2026-09-04 shows `brcmfmac` + `brcmfmac4350-pcie.bin` ship in the Mint
-      22.3 live filesystem, and that `broadcom-sta-dkms` does **not** support
-      BCM4350 (`14e4:43a3`) — its supported table stops at `0x43a0`. The docs
-      have been corrected accordingly. Verify at first boot with
-      `lspci -nn | grep -i network`, `lsmod | grep brcmfmac`, and `ip link`,
-      then downgrade the entries in `docs/TROUBLESHOOTING.md` and
-      `docs/SETUP.md` from "ISO-verified" to observed. If `lspci` reports an ID
-      other than `14e4:43a3`, the whole analysis needs redoing.
-- [ ] Install to internal SSD. Do **not** install `broadcom-sta-dkms`.
-- [ ] Apply always-on config: `HandleLidSwitch*=ignore`, mask sleep targets
-      (see `docs/OPERATIONS.md`); verify box stays reachable with lid closed.
-- [ ] Check whether a battery charge-limit control is exposed under Linux on
-      this model; record the answer in `docs/OPERATIONS.md`.
+- [x] Boot the MacBook8,1 from the T7 and install. Done 2026-10-12: Linux
+      Mint 22.3 XFCE on the internal 256 GB NVMe, hostname `peppermint-patty`,
+      kernel `7.0.0-38-generic`, Wi-Fi `wlp1s0` at `192.168.1.192`.
+- [x] **Broadcom finding confirmed on real hardware 2026-10-12.**
+      `lspci -nnk` shows `[14e4:43a3]` with `brcmfmac` in use; Wi-Fi worked in
+      the live session and after install with no dongle and no
+      `broadcom-sta-dkms`. The Apple-specific NVRAM/CLM files the ISO lacks did
+      fail to load (kernel log) and the OTP fallback carried it, exactly as
+      predicted. `docs/SETUP.md` and `docs/TROUBLESHOOTING.md` now say
+      "observed". No USB Ethernet adapter was needed.
+- [x] Check whether a battery charge-limit control is exposed. Done
+      2026-10-12: it is not (`charge_full*`/`charge_now` only, no
+      `charge_control_*`). Baseline 397 cycles / 73% health recorded in
+      `docs/OPERATIONS.md`.
+- [x] XFCE power manager set to never suspend (lid = nothing, idle = never,
+      keeps its own lid inhibitor). Done 2026-10-12 via `xfconf-query`; see
+      `docs/SETUP.md` step 4.
+- [ ] **Run `sudo bash scripts/provision_host.sh` on the hub** (human: needs
+      the sudo password). It writes the logind lid drop-in, masks the sleep
+      targets, installs `openssh-server`, `docker.io`, `docker-compose-v2`,
+      enables both services and adds the user to `docker`. Then log out/in (or
+      reboot) and run `bash scripts/check_host_config.sh` — it was run
+      2026-10-12 before provisioning and FAILed every root-level item, which
+      is the expected baseline.
+- [ ] Verify the box stays reachable over SSH with the lid closed for 30 min
+      (FR-001-AC-1, GAP-001). Only meaningful after the item above and a
+      reboot.
+- [ ] Set a DHCP reservation for `peppermint-patty` on the router so
+      `192.168.1.192` stops being an assumption in the docs.
+- [ ] Harden SSH after it is installed: key-only auth
+      (`PasswordAuthentication no` in a `/etc/ssh/sshd_config.d/` drop-in) once
+      a key is on the box. `provision_host.sh` installs distro defaults on
+      purpose so the first login is not locked out.
+- [ ] Set up gbrain on this machine: run `/setup-gbrain` here (needs the
+      Supabase password, which lives only in the other machine's
+      `~/.gbrain/config.json`). Until then `scripts/check_gbrain_state.sh`
+      reports STALE on the hub — the expected cross-machine signal.
+- [ ] Reclaim the T7's capacity now that the install is done. `dd` replaced
+      its partition table, so 1.8 TB currently presents as a 2.8 GB volume;
+      repartition and reformat.
 
 ## Services (stack)
 
-- [ ] Install Docker Engine + Compose plugin.
 - [x] Author `compose/docker-compose.yml` with Home Assistant Container,
       pinned to a dated stable image tag (`2026.8.0`); bind-mount `config/`.
-      File exists; `docker compose config` validation still pending Docker
-      being installed (GAP-004 stays open until then).
+      Bind mount moved 2026-10-12 from `./config` (`compose/config/`, which
+      had its own ignore-everything `.gitignore`) to `../config`, the
+      repository-root `config/` that README and `.gitignore` describe, so
+      hand-authored YAML can be tracked while runtime state is ignored.
+      `docker compose config` validation still pending Docker (GAP-004).
 - [ ] Bring HA up, complete onboarding, confirm reachable at `:8123`.
 - [ ] Decide whether Mosquitto (MQTT) is needed based on chosen devices; add
       container if so.
@@ -103,8 +121,14 @@ Keep entries specific, actionable, and current.
       closed (FR-001).
 - [ ] Close GAP-003: verify the stack returns unattended after `sudo reboot`
       (FR-003).
-- [ ] Close GAP-004: author `compose/docker-compose.yml` so the compose tier
-      of the suite stops skipping (FR-004).
+- [ ] Close GAP-004: run `docker compose -f compose/docker-compose.yml config
+      --quiet` on the hub once Docker is installed, then promote `FR-004`
+      (FR-004).
+- [x] Executable check for FR-001-AC-2/AC-3 written and unit-tested:
+      `scripts/check_host_config.sh` + `scripts/test_check_host_config.sh`
+      (19 cases), wired into `scripts/run_tests.sh` as a blocking host-tier
+      check on the hub, SKIP elsewhere. Done 2026-10-12. It has run on the hub
+      and failed (pre-provisioning) — promotion waits for a pass.
 - [ ] Close GAP-005: perform a real restore from backup onto a clean target
       (FR-007). An untested restore is not a backup.
 - [ ] Close GAP-006: pull mains power for 10 minutes and confirm the hub keeps
@@ -116,15 +140,20 @@ Keep entries specific, actionable, and current.
 
 ## Documentation
 
-- [ ] Replace `docs/SETUP.md` Part 2 (currently marked **unverified**) with
-      the commands actually typed during the first real provisioning run, not
-      the anticipated ones.
-- [ ] Rewrite the **(anticipated)** entries in `docs/TROUBLESHOOTING.md` with
-      observed symptoms once the machine has been through a real install.
-- [ ] Record the battery charge-limit finding in `docs/OPERATIONS.md` once
-      checked (either way — confirming its absence is a valid result).
-- [ ] Move `docs/OTS_SOFTWARE.md` entries from `Evaluating` to `Active` as
-      each component is actually deployed and its verification observed.
+- [x] Replace `docs/SETUP.md` Part 2 with what was actually observed and
+      typed. Done 2026-10-12 for steps 1–6; step 7 (bring up Home Assistant)
+      still reads as a plan until it has been run.
+- [~] Rewrite the **(anticipated)** entries in `docs/TROUBLESHOOTING.md` with
+      observed symptoms. Done 2026-10-12 for Wi-Fi, battery, and the lid
+      defaults; the Docker/Home Assistant entries stay anticipated until the
+      stack has run.
+- [x] Record the battery charge-limit finding in `docs/OPERATIONS.md`. Done
+      2026-10-12 (absent; baseline recorded).
+- [~] Move `docs/OTS_SOFTWARE.md` entries from `Evaluating` to `Active` as
+      each component is actually deployed. OTS-001 (Mint 22.3) is Active as of
+      2026-10-12; Docker, OpenSSH (new row OTS-006) and Home Assistant wait.
+- [ ] Rewrite `docs/SETUP.md` step 7 and the Docker/HA troubleshooting entries
+      from observation after the stack's first start.
 
 ## Tooling & Compliance
 

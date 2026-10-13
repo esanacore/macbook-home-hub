@@ -6,6 +6,146 @@ This project follows semantic versioning.
 
 ## Unreleased
 
+### Added
+
+- **First run on the hub.** The `MacBook8,1` (`peppermint-patty`) was imaged
+  with Linux Mint 22.3 XFCE on 2026-10-12 and this repository was set up on it
+  per `docs/SETUP.md` Part 1: constitution submodule initialized, Git identity
+  set, `pre-commit` (via `uv`) installed with both commit and pre-push hooks,
+  Bun + gstack installed with `constitution/scripts/setup-machine.sh`. The XFCE
+  power manager was set to never suspend (lid = nothing, idle = never).
+- `scripts/provision_host.sh` — the root-level half of provisioning in one
+  idempotent, reviewable script: logind lid-switch drop-in
+  (`/etc/systemd/logind.conf.d/50-macbook-home-hub.conf`), sleep targets
+  masked, `openssh-server` + `docker.io` + `docker-compose-v2` installed and
+  enabled (`ssh.socket`, the socket-activated unit Mint 22 ships), user added to `docker`. Refuses to run on anything but a
+  `MacBook8,1` without `--force`, and deliberately does not restart logind
+  (that can end the operator's session; the next step is a reboot anyway).
+  **Written and reviewed; not yet run** — `sudo` needs a password an agent
+  cannot type.
+- `scripts/check_host_config.sh` — verifies the always-on state without root
+  by reading the *live* logind properties over D-Bus, the four sleep targets,
+  Docker and SSH unit states, and the XFCE power-manager settings. This is the
+  executable form of FR-001-AC-2/AC-3. Ran on the hub 2026-10-12 and reported
+  FAIL on every root-level item, as expected before `provision_host.sh`.
+- `scripts/test_check_host_config.sh` — 16 fixture-driven unit tests for the
+  checker (fake `busctl`/`systemctl`/`docker`/`id`/`xfconf-query` on `PATH`),
+  one negative case per check plus the empty-inherits-parent rule for
+  `HandleLidSwitchExternalPower`. Blocking in `scripts/run_tests.sh`.
+- `scripts/run_tests.sh` gained a **host-config tier**: runs
+  `check_host_config.sh` as a blocking check when on the `MacBook8,1` (or
+  `HUB_LOCAL=1`), SKIPs elsewhere.
+- `docs/OTS_SOFTWARE.md` row OTS-006 for `openssh-server`.
+
+- `compose/docker-compose.yml` declaring the Home Assistant container with a
+  pinned dated image tag (`ghcr.io/home-assistant/home-assistant:2026.8.0`),
+  `unless-stopped` restart policy, host networking, and a `./config` bind
+  mount. Companions (Mosquitto, Node-RED) are deliberately absent — they are
+  Deferred in `docs/REQUIREMENTS_TRACEABILITY.md` until adoption is decided.
+  The compose tier of the test suite now finds the file; `docker compose
+  config` validation still requires Docker to be installed (GAP-004 stays
+  open until then).
+- gstack gbrain initialized for this repo: Supabase engine (project
+  `yvamohixcwjchhxufrcm`, us-west-1), MCP registered at user scope, repo
+  policy read-write. `CLAUDE.md` carries the `## GBrain Configuration` and
+  `## GBrain Search Guidance` blocks. The Supabase DB password and pooler
+  URL live only in `~/.gbrain/config.json` (mode 0600), never in this repo.
+- `scripts/check_gbrain_state.sh` — detects drift between the
+  `## GBrain Configuration` block in `CLAUDE.md` and the actual machine state
+  (gbrain installed? MCP registered? config file present?). Catches the
+  cross-machine-clone staleness risk where a CLAUDE.md committed on machine A
+  claims gbrain is configured, but machine B has no gbrain. Wired into
+  `scripts/run_tests.sh` as a static-tier check.
+- `scripts/test_check_gbrain_state.sh` — unit tests for the staleness checker
+  covering five fixture states: in-sync, stale-MCP-unregistered,
+  stale-config-missing, block-absent, CLAUDE.md-absent. Each fixture asserts
+  the checker's exit code and a substring of its output.
+
+### Changed
+
+- `compose/docker-compose.yml` bind mount is now `../config` instead of
+  `./config`. Compose resolves relative paths against the compose file's
+  directory, so the old value meant `compose/config/`, which carried its own
+  ignore-everything `.gitignore` (now removed along with its `.gitkeep`). The
+  new value is the repository-root `config/` that `README.md`, `.gitignore`
+  and `docs/ENV_VARS.md` all describe — where runtime state is ignored
+  selectively so hand-authored YAML can be tracked. `config/.gitkeep` added so
+  the directory exists with the operator's ownership before Docker creates it
+  as root; `.HA_VERSION` and `blueprints/` added to the ignore list.
+- `docs/SETUP.md` Part 2 rewritten from "planned, unverified" to what was
+  observed on the hardware: Wi-Fi via in-tree `brcmfmac` with no dongle
+  (interface `wlp1s0`; the Apple NVRAM/CLM blobs fail to load and the OTP
+  fallback carries it), no battery charge-limit control exposed, the two-layer
+  lid-switch story (logind **and** the XFCE power manager, which holds its own
+  `handle-lid-switch` inhibitor), and the correct Mint 22 package names
+  (`docker-compose-v2`, not `docker-compose-plugin`). Part 1 now installs
+  `pre-commit` with `uv` since stock Mint ships no `pip`.
+- `docs/OPERATIONS.md`: lid-switch section covers both policy layers and the
+  drop-in; battery section records the 2026-10-12 finding (no charge limit;
+  baseline 397 cycles, 73% of design capacity); deployment and reachability
+  sections carry the real hostname and address and the `-f compose/...` form.
+- `docs/TROUBLESHOOTING.md`: Wi-Fi entry and battery entry are now
+  **(observed)**; lid entry records the observed defaults; new entry for
+  `sudo` from an agent session; `pre-commit` install hint for Mint.
+- `docs/OTS_SOFTWARE.md`: OTS-001 Linux Mint → **Active** (22.3, kernel
+  7.0.0-38, observed running the static test tier); Docker row names the real
+  packages and versions; verification caveat updated.
+- `docs/TEST_PLAN.md`: host-config tier added to the tier table and strategy;
+  coverage-evaluation row for 2026-10-12 (still 2 of 12 executed — nothing
+  promoted); GAP-001 and GAP-004 descriptions reflect that the machine exists.
+- `docs/COMMAND_REFERENCE.md`, `README.md`: provisioning and verification
+  commands, current status, structure tree.
+- The unmerged 2026-09-04 branch `docs/broadcom-driver-correction` (Wi-Fi
+  driver correction, install-media diagnosis, memory entries) is merged into
+  this change, since the hardware confirmed all of it.
+
+- Constitution submodule upgraded from **1.42.2 to 1.43.0**. The release adds
+  a wiki link/orphan checker (`check_wiki_links.sh`) and a
+  `constitution-wiki.yml` workflow template. All eight existing checkers pass
+  unchanged against 1.43.0, and no repository file referenced the old version.
+
+  `constitution-wiki.yml` was **deliberately not adopted**: this repository has
+  no `wiki/` directory, and the template's publish job requires a GitHub wiki
+  to have been enabled and initialized by hand, failing loudly until it is.
+  `check_wiki_links.sh` already exits 0 with "No wiki/ directory; nothing to
+  check," so adopting the workflow would add a red job for a feature the
+  project does not use. Adopt it if a `wiki/` is ever introduced.
+
+  Upstream `v1.44.0` was **skipped on purpose**: its tag points at a commit
+  whose `VERSION` file reads `1.25.0`, which appears to be a botched release.
+  That anomaly also masks staleness in `constitution-version.yml` — because the
+  pinned commit is not an ancestor of the malformed tag, the gate reports
+  "ahead of or diverged" and passes instead of reporting BEHIND and failing.
+  This repository was genuinely two releases behind while that check was green.
+  Revisit when upstream corrects the tag.
+
+- The requirements-traceability CI gate is **blocking again**, reverting the
+  temporary advisory accommodation added in `7be4dc3`. Instead of waiting for
+  the gap log to empty, `docs/PRODUCT_REQUIREMENTS.md` now separates **Active**
+  requirements (bold IDs — gated, and each has a check that has actually run)
+  from **Deferred** ones (backticked IDs — outside the gate because they cannot
+  be verified until the hub exists). Deferred requirements keep their full
+  text, acceptance criteria, matrix rows, gap-log entries, and TODO items, and
+  `check_traceability.sh` prints every one of them on each run. Promoting a
+  requirement to Active without a verifying test fails CI — the safety property
+  the gate exists to provide.
+- Filled `docs/adr/0001-record-architecture-decisions.md` (was the unfilled
+  template). Now an Accepted ADR recording the decision to use ADRs, with
+  ADR-0002 noted as Related.
+- Filled `docs/AGENT_PROMPTS.md` with six project-real prompts (provision,
+  smoke check, restore drill, ADR drafting, constitution review, stack bring
+  up); was template boilerplate.
+- Filled `docs/HELP.md` Primary Maintainers and Asking for Help placeholders.
+- `docs/OTS_SOFTWARE.md` OTS-003 version updated from `stable (pinned tag
+  once deployed)` to `2026.8.0`, with the update policy note pointing at
+  `compose/docker-compose.yml`. Status stays `Evaluating` until the component
+  is observed running on the hub.
+- `docs/ENV_VARS.md` `TZ` promoted from Anticipated to Optional Variables
+  (now declared in the compose file). `HA_CONFIG_PATH`, `PUID`, `PGID`, and
+  the MQTT pair stay Anticipated.
+- `.devcontainer/devcontainer.json` no longer installs the Node feature —
+  this repo has no JavaScript.
+
 ### Fixed
 
 - **Corrected the Wi-Fi driver guidance, which named the wrong driver.**
@@ -35,82 +175,11 @@ This project follows semantic versioning.
   `brcmfmac` must read calibration data from the card's OTP. Confirming both at
   first boot is tracked in `TODO.md`.
 
-### Changed
-
-- Constitution submodule upgraded from **1.42.2 to 1.43.0**. The release adds
-  a wiki link/orphan checker (`check_wiki_links.sh`) and a
-  `constitution-wiki.yml` workflow template. All eight existing checkers pass
-  unchanged against 1.43.0, and no repository file referenced the old version.
-
-  `constitution-wiki.yml` was **deliberately not adopted**: this repository has
-  no `wiki/` directory, and the template's publish job requires a GitHub wiki
-  to have been enabled and initialized by hand, failing loudly until it is.
-  `check_wiki_links.sh` already exits 0 with "No wiki/ directory; nothing to
-  check," so adopting the workflow would add a red job for a feature the
-  project does not use. Adopt it if a `wiki/` is ever introduced.
-
-  Upstream `v1.44.0` was **skipped on purpose**: its tag points at a commit
-  whose `VERSION` file reads `1.25.0`, which appears to be a botched release.
-  That anomaly also masks staleness in `constitution-version.yml` — because the
-  pinned commit is not an ancestor of the malformed tag, the gate reports
-  "ahead of or diverged" and passes instead of reporting BEHIND and failing.
-  This repository was genuinely two releases behind while that check was green.
-  Revisit when upstream corrects the tag.
-
-### Added
-
-- `compose/docker-compose.yml` declaring the Home Assistant container with a
-  pinned dated image tag (`ghcr.io/home-assistant/home-assistant:2026.8.0`),
-  `unless-stopped` restart policy, host networking, and a `./config` bind
-  mount. Companions (Mosquitto, Node-RED) are deliberately absent — they are
-  Deferred in `docs/REQUIREMENTS_TRACEABILITY.md` until adoption is decided.
-  The compose tier of the test suite now finds the file; `docker compose
-  config` validation still requires Docker to be installed (GAP-004 stays
-  open until then).
-- gstack gbrain initialized for this repo: Supabase engine (project
-  `yvamohixcwjchhxufrcm`, us-west-1), MCP registered at user scope, repo
-  policy read-write. `CLAUDE.md` carries the `## GBrain Configuration` and
-  `## GBrain Search Guidance` blocks. The Supabase DB password and pooler
-  URL live only in `~/.gbrain/config.json` (mode 0600), never in this repo.
-- `scripts/check_gbrain_state.sh` — detects drift between the
-  `## GBrain Configuration` block in `CLAUDE.md` and the actual machine state
-  (gbrain installed? MCP registered? config file present?). Catches the
-  cross-machine-clone staleness risk where a CLAUDE.md committed on machine A
-  claims gbrain is configured, but machine B has no gbrain. Wired into
-  `scripts/run_tests.sh` as a static-tier check.
-- `scripts/test_check_gbrain_state.sh` — unit tests for the staleness checker
-  covering five fixture states: in-sync, stale-MCP-unregistered,
-  stale-config-missing, block-absent, CLAUDE.md-absent. Each fixture asserts
-  the checker's exit code and a substring of its output.
-
-### Changed
-
-- The requirements-traceability CI gate is **blocking again**, reverting the
-  temporary advisory accommodation added in `7be4dc3`. Instead of waiting for
-  the gap log to empty, `docs/PRODUCT_REQUIREMENTS.md` now separates **Active**
-  requirements (bold IDs — gated, and each has a check that has actually run)
-  from **Deferred** ones (backticked IDs — outside the gate because they cannot
-  be verified until the hub exists). Deferred requirements keep their full
-  text, acceptance criteria, matrix rows, gap-log entries, and TODO items, and
-  `check_traceability.sh` prints every one of them on each run. Promoting a
-  requirement to Active without a verifying test fails CI — the safety property
-  the gate exists to provide.
-- Filled `docs/adr/0001-record-architecture-decisions.md` (was the unfilled
-  template). Now an Accepted ADR recording the decision to use ADRs, with
-  ADR-0002 noted as Related.
-- Filled `docs/AGENT_PROMPTS.md` with six project-real prompts (provision,
-  smoke check, restore drill, ADR drafting, constitution review, stack bring
-  up); was template boilerplate.
-- Filled `docs/HELP.md` Primary Maintainers and Asking for Help placeholders.
-- `docs/OTS_SOFTWARE.md` OTS-003 version updated from `stable (pinned tag
-  once deployed)` to `2026.8.0`, with the update policy note pointing at
-  `compose/docker-compose.yml`. Status stays `Evaluating` until the component
-  is observed running on the hub.
-- `docs/ENV_VARS.md` `TZ` promoted from Anticipated to Optional Variables
-  (now declared in the compose file). `HA_CONFIG_PATH`, `PUID`, `PGID`, and
-  the MQTT pair stay Anticipated.
-- `.devcontainer/devcontainer.json` no longer installs the Node feature —
-  this repo has no JavaScript.
+- pre-commit hooks installed and active (`pre-commit install` plus
+  `pre-commit install --hook-type pre-push` for the secrets sweep). First
+  `pre-commit run --all-files` trimmed trailing whitespace and normalized
+  end-of-file on `CLAUDE.md`, `docs/MEMORY.md`, `docs/AGENT_PROMPTS.md`, and
+  `docs/adr/0001-record-architecture-decisions.md`.
 
 ### Removed
 
@@ -119,14 +188,6 @@ This project follows semantic versioning.
 - `.constitution-bootstrap/` — adoption complete. Not read by any
   parent-repo script; `constitution/scripts/bootstrap.sh` recreates it if
   ever rerun.
-
-### Fixed
-
-- pre-commit hooks installed and active (`pre-commit install` plus
-  `pre-commit install --hook-type pre-push` for the secrets sweep). First
-  `pre-commit run --all-files` trimmed trailing whitespace and normalized
-  end-of-file on `CLAUDE.md`, `docs/MEMORY.md`, `docs/AGENT_PROMPTS.md`, and
-  `docs/adr/0001-record-architecture-decisions.md`.
 
 ## [0.1.0] - 2026-08-15
 

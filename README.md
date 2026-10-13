@@ -11,9 +11,10 @@ that doubles as a home-automation hub running Home Assistant in Docker.
 The machine's quirk is its strength here: the built-in battery acts as a free
 UPS, so the hub rides through power blips that would hard-cut a Pi or NUC.
 
-Status: early. The Linux base and the Home Assistant install method are
-decided (see `docs/adr/`); the specific devices and companion services are
-still open.
+Status: provisioning. The MacBook (`peppermint-patty`) runs Linux Mint 22.3
+XFCE as of 2026-10-12 with Wi-Fi working out of the box; the root-level
+always-on and Docker steps are scripted and waiting to be run. The specific
+devices and companion services are still open.
 
 ## Current Capabilities
 
@@ -26,14 +27,24 @@ Honest snapshot of what this repo covers today. This list grows as the project d
 - Holds the operational runbook for running a laptop as an always-on hub.
 - Defines 12 requirements with acceptance criteria (`docs/PRODUCT_REQUIREMENTS.md`)
   and tracks each to its verifying check (`docs/REQUIREMENTS_TRACEABILITY.md`).
+- Declares the stack in `compose/docker-compose.yml`: Home Assistant Container
+  pinned to a dated tag, host networking, config bind-mounted from `config/`.
+- Provisions the host with one reviewable root-level command
+  (`sudo bash scripts/provision_host.sh`): logind lid-switch drop-in, sleep
+  targets masked, SSH and Docker installed and enabled, idempotent, refuses to
+  run on the wrong hardware.
+- Verifies the host without root (`bash scripts/check_host_config.sh`) by
+  reading the live logind, systemd, Docker and XFCE power-manager state, with
+  its own fixture-driven unit tests.
 - Runs a real check suite with `bash scripts/run_tests.sh`: governance and
-  secret sweeps today, compose validation and a hub smoke check
-  (`scripts/smoke_check.sh`) once those exist.
+  secret sweeps anywhere; host-config and compose validation on the hub; a
+  smoke check (`scripts/smoke_check.sh`) against a running hub.
 
-Not yet: an actual `docker-compose.yml`, provisioning scripts, or any device
-integrations. **The MacBook has not been imaged yet**, so every requirement
-that depends on the running hub is unverified — see the gap log in
-`docs/TEST_PLAN.md`. Those are tracked in `TODO.md`.
+Not yet: Home Assistant actually running, a backup job, or any device
+integrations. The MacBook is imaged, but the root-level provisioning script
+has not been run on it yet, so every requirement that depends on the running
+hub is still unverified — see the gap log in `docs/TEST_PLAN.md` and
+`TODO.md`.
 
 ## Running the Checks
 
@@ -47,19 +58,20 @@ HUB_HOST=<hub-ip> bash scripts/run_tests.sh   # includes the hub smoke check
 
 Provisioning steps live in `docs/SETUP.md`. High level:
 
-1. Flash a Linux Mint XFCE (or Fedora XFCE) live USB.
-2. Install to the internal SSD, keeping a USB Ethernet/Wi-Fi dongle handy for
-   the Broadcom driver gap during install.
-3. Apply the always-on operations config (`docs/OPERATIONS.md`).
-4. Install Docker and bring up Home Assistant Container.
+1. Flash a Linux Mint XFCE live USB and **verify it** against the ISO's manifest.
+2. Install to the internal SSD. Wi-Fi works out of the box (`brcmfmac`); no
+   dongle and no `broadcom-sta-dkms`.
+3. Repository tooling: submodule, `pre-commit`, gstack (Part 1).
+4. `sudo bash scripts/provision_host.sh`, reboot, `bash scripts/check_host_config.sh`.
+5. `docker compose -f compose/docker-compose.yml up -d` and onboard Home Assistant.
 
 ## Project Structure
 
 ```text
 macbook-home-hub/
-├── compose/         ← docker-compose stack (Home Assistant + companions) [planned]
-├── config/          ← Home Assistant + service configuration [planned]
-├── scripts/         ← run_tests.sh, smoke_check.sh; provisioning helpers [planned]
+├── compose/         ← docker-compose stack (Home Assistant; companions deferred)
+├── config/          ← Home Assistant configuration bind mount (created on first start; runtime state gitignored)
+├── scripts/         ← run_tests.sh, smoke_check.sh, provision_host.sh, check_host_config.sh (+ tests)
 ├── docs/            ← architecture, operations, requirements, ADRs, setup
 └── constitution/    ← Eric's Engineering Constitution (git submodule)
 ```
@@ -69,7 +81,7 @@ macbook-home-hub/
 ```mermaid
 flowchart TD
     subgraph HW["MacBook8,1 (fanless, battery = UPS)"]
-        OS["Linux Mint XFCE\n(host OS)"]
+        OS["Linux Mint 22.3 XFCE\n(host OS, brcmfmac Wi-Fi)"]
         DOCKER["Docker Engine"]
         OS --> DOCKER
     end

@@ -5,6 +5,9 @@
 # docs/REQUIREMENTS_TRACEABILITY.md and are deliberately absent here until a
 # decision is made to adopt them.
 #
+# Paths are relative to this file, so `../config` is the repository-root
+# `config/` directory that README.md describes and .gitignore protects.
+#
 # Validate offline without starting anything:
 #   docker compose -f compose/docker-compose.yml config --quiet
 #
@@ -18,6 +21,6 @@ services:
     restart: unless-stopped
     network_mode: host
     volumes:
-      - ./config:/config
+      - ../config:/config
     environment:
       TZ: America/Los_Angeles
