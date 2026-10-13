@@ -154,7 +154,7 @@ of the script existing.
 6. [ ] **HUMAN** — Run `/setup-gbrain` in this repository on the hub
    - **Why a human:** needs the Supabase password, which lives only in the other machine's `~/.gbrain/config.json`.
    - **Done when:** `bash scripts/check_gbrain_state.sh` reports OK on `peppermint-patty`.
-7. [ ] **HUMAN** — Review and merge PR #17, then delete `docs/broadcom-driver-correction` (its commits are included)
-   - **Why a human:** merges and branch deletion are the maintainer's decision.
-   - **Done when:** merged, and `origin/docs/broadcom-driver-correction` is gone.
+7. [ ] **HUMAN** — Review and merge PR #17, then close PR #10 as superseded (its three commits are merged into #17) and delete `docs/broadcom-driver-correction`
+   - **Why a human:** merges, PR closure and branch deletion are the maintainer's decision.
+   - **Done when:** #17 merged, #10 closed, and `origin/docs/broadcom-driver-correction` is gone.
 8. [ ] **AUTOMATED** — CI (`constitution-*.yml`) runs on the PR; watch `constitution-tests`, `constitution-doc-freshness` and the traceability gate (now gating four IDs).
