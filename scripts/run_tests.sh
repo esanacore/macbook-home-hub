@@ -95,6 +95,11 @@ bash scripts/check_gbrain_state.sh || true
 run_check "gbrain: staleness checker unit tests" \
   bash scripts/test_check_gbrain_state.sh
 
+# The host-configuration checker's unit tests run anywhere (fixtures fake
+# busctl/systemctl/docker), so they are blocking like the gbrain ones.
+run_check "host: configuration checker unit tests" \
+  bash scripts/test_check_host_config.sh
+
 # --------------------------------------------------------- compose stack ---
 
 if [ -f compose/docker-compose.yml ]; then
@@ -107,6 +112,24 @@ if [ -f compose/docker-compose.yml ]; then
 else
   skip_check "compose: file parses and resolves" \
     "compose/docker-compose.yml does not exist yet (see TODO.md)"
+fi
+
+# ------------------------------------------------------------ host config ---
+
+# check_host_config.sh reads the live logind/systemd/docker state, so it only
+# means something on the hub itself. It runs when this is the MacBook8,1 (or
+# HUB_LOCAL=1 forces it) and SKIPs everywhere else. On the hub it is blocking:
+# a lid switch that still suspends is a real failure of FR-001.
+on_hub=false
+if [ "${HUB_LOCAL:-}" = 1 ] || [ "$(cat /sys/class/dmi/id/product_name 2>/dev/null)" = "MacBook8,1" ]; then
+  on_hub=true
+fi
+if [ "$on_hub" = true ]; then
+  run_check "host: always-on configuration (logind, sleep targets, docker, ssh)" \
+    bash scripts/check_host_config.sh
+else
+  skip_check "host: always-on configuration (logind, sleep targets, docker, ssh)" \
+    "not running on the hub (set HUB_LOCAL=1 to force)"
 fi
 
 # ------------------------------------------------------------ host smoke ---

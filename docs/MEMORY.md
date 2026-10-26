@@ -44,6 +44,41 @@ This file contains durable memories, codebase learnings, user preferences, and k
   gitignored produces no finding — correct behavior, but it means dropping a
   test file like `id_rsa` into the tree is *not* a valid way to prove the sweep
   works.
+- Long-standing Broadcom-on-Linux advice points at `broadcom-sta-dkms` (the
+  `wl` module), but that driver's supported-device table stops at
+  `0x14e4:0x43a0` (BCM4360/4352). The `MacBook8,1`'s BCM4350 is `0x14e4:0x43a3`
+  and is served by the in-tree `brcmfmac` driver instead. **Verify a chip's PCI
+  ID against a driver's own supported list before trusting community
+  guidance** — a package being present in a distro's pool is not evidence that
+  it supports your hardware. This repository carried the wrong instruction in
+  both `docs/SETUP.md` and `docs/TROUBLESHOOTING.md` until 2026-09-04.
+  Approved 2026-09-04.
+- **`dd` exiting 0 and a clean `dmesg` are not evidence that media is good.** A
+  failing USB device can silently corrupt data while every layer reports
+  success. Always verify written install media against a manifest before
+  trusting it — Mint ships `md5sum.txt` on the ISO for exactly this
+  (`cd <mountpoint> && md5sum -c md5sum.txt`). An unverified live USB fails
+  later, on unfamiliar hardware, in ways that look like problems with *that*
+  hardware.
+
+  To distinguish failing media from a failing host, two checks settle it:
+  1. Does the **first differing byte move** between writes? A fixed offset is a
+     dead flash block; a moving one is corruption in the transfer path.
+  2. Do **repeated cold reads of one unchanged region agree with each other**?
+     Unmount and remount between reads to defeat the page cache — `iflag=direct`
+     is not available on iso9660 and silently reads nothing. A device that
+     cannot reproduce its own contents cannot store data.
+
+  Corollary: exonerate the host by evidence, not assumption. Re-hashing the
+  source file and writing the same image to different media through the same
+  USB subsystem and RAM is what proved the host innocent here, after two
+  processes taking memory faults had made failing RAM look likely. That theory
+  was wrong. Approved 2026-09-04.
+- Long writes should run **detached from the desktop session**
+  (`sudo systemd-run --unit=<name> --service-type=oneshot /bin/dd ...`,
+  followed by `journalctl -u <name> -f`). An Xorg segfault in `nvidia_drv.so`
+  killed a `dd` mid-write on this machine on 2026-09-04, truncating the image;
+  a write owned by PID 1 survives a desktop crash. Approved 2026-09-04.
 
 ## Active Project Decisions
 

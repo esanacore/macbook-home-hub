@@ -27,21 +27,25 @@ A requirement with no verifying test is a coverage gap. It is recorded in
 
 ## Reading This Matrix Honestly
 
-The hub hardware has not been provisioned yet. Ten of twelve requirements
-describe behavior of a machine that does not exist, so they have no *executed*
-verifying test.
+The hub was provisioned on 2026-10-12, the stack is running, and it has come
+back unattended from a reboot. Six requirements are now **Active** (bold IDs in
+`docs/PRODUCT_REQUIREMENTS.md`, inside the blocking CI gate): `NFR-001`,
+`NFR-004`, and — promoted that day on the strength of checks that actually ran
+on the hub — `FR-001`, `FR-002`, `FR-003` and `FR-004`.
 
-Those ten are **Deferred** in `docs/PRODUCT_REQUIREMENTS.md` — their IDs are
-backticked rather than bold, which places them outside the blocking CI gate.
-They keep their rows below, their gap-log entries in `docs/TEST_PLAN.md`, and
-their items in `TODO.md`. `check_traceability.sh` lists every one of them on
-each run under "matrix rows with no matching declared requirement," so the
-deferred set is printed in CI rather than hidden by it.
+Two of the Active ones are `In Progress` rather than `Verified`, and the
+distinction is kept on purpose: `FR-001`'s mechanical criteria pass but the
+30-minute lid-closed test has not been done, and `FR-002` has been checked from
+the hub's own LAN address but not yet from a second machine. Their gap-log rows
+stay open for exactly those residuals.
 
-Two of the ten (`FR-002`, `FR-004`) do have a check *written* —
-`smoke_check.sh` and the compose tier of `run_tests.sh` — but neither has ever
-run to completion against real hardware. They are still deferred, deliberately.
-A check that has never executed has proven nothing.
+The other six are **Deferred** — IDs backticked rather than bold, outside the
+gate. They keep their rows below, their gap-log entries in `docs/TEST_PLAN.md`,
+and their items in `TODO.md`. `check_traceability.sh` lists every one of them
+on each run under "matrix rows with no matching declared requirement," so the
+deferred set is printed in CI rather than hidden by it. What blocks them is a
+pulled plug, a restore onto a second machine, a router inspection, and two
+adoption decisions (MQTT, Node-RED).
 
 The temptation is to name a planned script in the Verifying Tests column to
 turn the report green. That would make the matrix lie about what has been
@@ -55,10 +59,10 @@ whether or not the requirement is currently gated.
 
 | Requirement ID | Level | Description | Acceptance Criteria | Verifying Tests | Status |
 | --- | --- | --- | --- | --- | --- |
-| FR-001 | MUST | Host stays running and reachable with the lid closed | FR-001-AC-1 SSH answers after 30 min lid-closed; FR-001-AC-2 no sleep inhibitor pending; FR-001-AC-3 sleep targets masked | none — GAP (needs hardware; see GAP-001) | Not Started |
-| FR-002 | MUST | Home Assistant reachable over HTTP on :8123 from the LAN | FR-002-AC-1 curl returns 2xx/3xx from another LAN host; FR-002-AC-2 container in running state, not restart-looping | `scripts/smoke_check.sh` (written; never executed against a hub — see GAP-002) | Not Started |
-| FR-003 | MUST | Stack returns automatically after reboot or power loss | FR-003-AC-1 HA answers within 5 min of reboot unattended; FR-003-AC-2 all services declare unless-stopped/always | none — GAP (needs hardware; see GAP-003) | Not Started |
-| FR-004 | MUST | Hub configuration is version-controlled, not ad hoc | FR-004-AC-1 compose file committed and passes validation; FR-004-AC-2 images pinned to dated tags, never latest; FR-004-AC-3 config is a bind mount | `scripts/run_tests.sh` compose tier (`docker compose config`) — currently SKIPs, file absent; see GAP-004 | Not Started |
+| FR-001 | MUST | Host stays running and reachable with the lid closed | FR-001-AC-1 SSH answers after 30 min lid-closed; FR-001-AC-2 no sleep inhibitor pending; FR-001-AC-3 sleep targets masked | `scripts/check_host_config.sh` (host tier of `run_tests.sh`) covers AC-2/AC-3 — executed on the hub 2026-10-12 after the post-provisioning reboot, PASS. AC-1 (30 min lid-closed over SSH) is manual and still pending; residual tracked in `docs/TEST_PLAN.md` row 001 | In Progress (AC-2, AC-3 verified; AC-1 pending) |
+| FR-002 | MUST | Home Assistant reachable over HTTP on :8123 from the LAN | FR-002-AC-1 curl returns 2xx/3xx from another LAN host; FR-002-AC-2 container in running state, not restart-looping | `scripts/smoke_check.sh` via `HUB_HOST=192.168.1.192 bash scripts/run_tests.sh` — executed on the hub 2026-10-12, PASS (HTTP 302, container running) | In Progress (AC-2 verified; AC-1 passed from the hub's own LAN address, pending a run from a second LAN host) |
+| FR-003 | MUST | Stack returns automatically after reboot or power loss | FR-003-AC-1 HA answers within 5 min of reboot unattended; FR-003-AC-2 all services declare unless-stopped/always | `sudo reboot` 2026-10-12, then `HUB_HOST=192.168.1.192 bash scripts/run_tests.sh` ~1 min after boot: smoke PASS (HTTP 302), container started 14 s after boot; compose declares `unless-stopped` | Verified |
+| FR-004 | MUST | Hub configuration is version-controlled, not ad hoc | FR-004-AC-1 compose file committed and passes validation; FR-004-AC-2 images pinned to dated tags, never latest; FR-004-AC-3 config is a bind mount | `scripts/run_tests.sh` compose tier (`docker compose -f compose/docker-compose.yml config --quiet`) — executed on the hub 2026-10-12, PASS | Verified |
 | FR-005 | SHOULD | MQTT broker available for MQTT-speaking devices | FR-005-AC-1 Mosquitto running and HA reports connected; FR-005-AC-2 anonymous access disabled | none — GAP (device selection still open) | Deferred |
 | FR-006 | COULD | Node-RED available as a visual flow editor | FR-006-AC-1 reachable and can read/write HA entities | none — GAP (optional; not adopted) | Deferred |
 | FR-007 | MUST | Config backed up off-hub, with a restore actually exercised | FR-007-AC-1 scheduled off-host copy with verifiable last run; FR-007-AC-2 restore performed onto a clean target; FR-007-AC-3 encryption key stored off the hub | none — GAP (no backup job exists; see GAP-005) | Not Started |
@@ -78,17 +82,19 @@ whether or not the requirement is currently gated.
 | Metric | Count |
 | --- | --- |
 | Total requirements | 12 |
-| Verified | 2 |
-| In progress | 0 |
-| Not started | 8 |
+| Verified | 4 |
+| In progress | 2 |
+| Not started | 4 |
 | Deferred | 2 |
-| Requirements without an executed verifying test (gaps) | 10 |
-| — of which a check is written but unproven | 2 (FR-002, FR-004) |
-| Active (gated by blocking CI) | 2 (NFR-001, NFR-004) |
-| Deferred (outside the gate, blocked on hardware) | 10 |
+| Requirements without a passing executed verifying test (gaps) | 6 |
+| — of which Active with a residual manual criterion | 2 (FR-001 lid test, FR-002 second host) |
+| Active (gated by blocking CI) | 6 (NFR-001, NFR-004, FR-001, FR-002, FR-003, FR-004) |
+| Deferred (outside the gate, blocked on physical tests or decisions) | 6 |
 
 `MUST` requirements: 8 total (FR-001, FR-002, FR-003, FR-004, FR-007,
-NFR-001, NFR-002, NFR-004), of which 2 are verified (NFR-001, NFR-004) and 6
-remain unverified. FR-002 and FR-004 have a written check that has never
-executed; the other four have no check at all. Every unverified `MUST` needs
-the physical hub — none is blocked on missing repository work.
+NFR-001, NFR-002, NFR-004), of which 4 are verified (NFR-001, NFR-004,
+FR-003, FR-004), 2 are in progress with a passing executed check and one
+manual criterion left (FR-001 lid test; FR-002 second LAN host), and 2 have
+no check at all (FR-007 backup/restore, NFR-002 power cut). Every unverified
+`MUST` needs a person at the machine — none is blocked on missing repository
+work.
