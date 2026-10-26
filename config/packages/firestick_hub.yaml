@@ -1,0 +1,102 @@
+# Home Assistant package for Firestick Hub.
+#
+# Install:
+#   1. Copy this file to <ha-config>/packages/firestick_hub.yaml
+#   2. In configuration.yaml:   homeassistant:
+#                                 packages: !include_dir_named packages
+#   3. In secrets.yaml:         firestick_hub_auth: "Bearer <your FIRESTICK_HUB_TOKEN>"
+#   4. Restart Home Assistant.
+#
+# Services you get: rest_command.firestick_notify, firestick_key, firestick_power,
+# firestick_launch, firestick_play_pause, firestick_volume.
+
+rest_command:
+  firestick_notify:
+    url: "http://127.0.0.1:8765/notify"
+    method: post
+    headers:
+      Authorization: !secret firestick_hub_auth
+    content_type: "application/json"
+    payload: >-
+      {"message": {{ message | tojson }},
+       "title": {{ (title | default('Home')) | tojson }},
+       "duration_seconds": {{ duration | default(10) | int }},
+       "position": {{ (position | default('top_right')) | tojson }},
+       "target": {{ (target | default('auto')) | tojson }}
+       {% if image_url is defined %}, "image_url": {{ image_url | tojson }}{% endif %}}
+
+  firestick_key:
+    url: "http://127.0.0.1:8765/key/{{ key }}"
+    method: post
+    headers:
+      Authorization: !secret firestick_hub_auth
+
+  firestick_power:
+    url: "http://127.0.0.1:8765/power/{{ state }}"
+    method: post
+    headers:
+      Authorization: !secret firestick_hub_auth
+
+  firestick_launch:
+    url: "http://127.0.0.1:8765/apps/launch"
+    method: post
+    headers:
+      Authorization: !secret firestick_hub_auth
+    content_type: "application/json"
+    payload: '{"package": {{ package | tojson }}}'
+
+  firestick_play_pause:
+    url: "http://127.0.0.1:8765/media/play_pause"
+    method: post
+    headers:
+      Authorization: !secret firestick_hub_auth
+
+  firestick_volume:
+    url: "http://127.0.0.1:8765/media/volume"
+    method: post
+    headers:
+      Authorization: !secret firestick_hub_auth
+    content_type: "application/json"
+    payload: '{"percent": {{ percent | int }}}'
+
+rest:
+  - resource: "http://127.0.0.1:8765/status"
+    headers:
+      Authorization: !secret firestick_hub_auth
+    scan_interval: 30
+    binary_sensor:
+      - name: "Fire TV screen on"
+        value_template: "{{ value_json.screen_on }}"
+      - name: "Kodi running"
+        value_template: "{{ value_json.kodi_running }}"
+    sensor:
+      - name: "Fire TV foreground app"
+        value_template: "{{ value_json.foreground_app or 'unknown' }}"
+      - name: "Kodi now playing"
+        value_template: >-
+          {{ value_json.now_playing.title if value_json.now_playing else 'nothing' }}
+
+script:
+  tv_movie_mode:
+    alias: "TV movie mode"
+    sequence:
+      - action: rest_command.firestick_power
+        data: { state: "on" }
+      - delay: "00:00:05"
+      - action: rest_command.firestick_launch
+        data: { package: "org.xbmc.kodi" }
+
+# Example automation; adjust the trigger entity to something you have.
+# automation:
+#   - alias: "Washer done on the TV"
+#     triggers:
+#       - trigger: state
+#         entity_id: binary_sensor.washer_running
+#         from: "on"
+#         to: "off"
+#     actions:
+#       - action: rest_command.firestick_notify
+#         data:
+#           title: "Laundry"
+#           message: "The washer is done"
+#           position: "center"

@@ -8,6 +8,16 @@ This project follows semantic versioning.
 
 ### Added
 
+- **Home Assistant loads packages.** `config/configuration.yaml` now includes
+  `config/packages/` via `homeassistant: packages: !include_dir_named packages`,
+  and the first package, `config/packages/firestick_hub.yaml`, is a copy of
+  `homeassistant/firestick_hub.yaml` from the separate `firestick-hub` repo. It
+  adds `rest_command.firestick_*` services, Fire TV / Kodi status sensors and a
+  `tv_movie_mode` script. Its bearer token comes from `!secret
+  firestick_hub_auth` in the gitignored `config/secrets.yaml`, so no credential
+  is committed. `config/.cache/` (Home Assistant brand-icon cache) is now
+  gitignored.
+
 - **First unattended reboot passed.** After `sudo reboot` on 2026-10-12 the
   host booted in 14 s, the `home-assistant` container started 14 s later on
   its `unless-stopped` policy, and about a minute after boot
