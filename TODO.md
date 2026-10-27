@@ -79,6 +79,9 @@ Keep entries specific, actionable, and current.
       drop the reference from `config/packages/firestick_hub.yaml`), restart
       HA, and confirm `smoke_check.sh` goes green on the hub. Until then
       FR-002-AC-2 is failing.
+- [ ] Adopt constitution 1.53.0 in `README.md`: name supported platforms,
+      one collapsed `<details>` block per platform (Linux bash on the hub,
+      Windows Git Bash for the operator laptop).
 - [ ] Run `HUB_HOST=192.168.1.192 bash scripts/smoke_check.sh` from a
       **second** LAN machine to satisfy FR-002-AC-1 literally; then mark
       FR-002 Verified.

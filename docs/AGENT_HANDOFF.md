@@ -40,9 +40,10 @@ that gets edited after the fact stops being evidence.
 
 - Manual residuals: FR-001-AC-1 (30 min lid-closed over SSH) and FR-002-AC-1
   (curl from a second LAN host). Onboarding. gbrain on this machine.
-- Constitution submodule is BEHIND (pinned 1.52.0, upstream 1.53.0); the
-  session-start hook and the `version-gate` CI job both say so, and master
-  fails the same gate. Handle as its own bump PR per repository precedent.
+- Constitution bumped 1.52.0 → 1.53.0 in PR #20 (operator chose to fold it
+  into that PR on 2026-10-26 instead of a separate bump PR). 1.53.0 is
+  documentation-standard only (per-platform README blocks, `<details>`
+  progressive disclosure); adopting it in `README.md` is open in TODO.md.
 - Release: `CHANGELOG.md` Unreleased is large and the hub is verifiably
   serving — cut `0.2.0` after PR #17 merges (see Next Steps).
 
@@ -187,7 +188,7 @@ of the script existing.
 5. [ ] **HUMAN** — Run `/setup-gbrain` in this repository on the hub
    - **Why a human:** needs the Supabase password, which lives only in the other machine's `~/.gbrain/config.json`.
    - **Done when:** `bash scripts/check_gbrain_state.sh` reports OK on `peppermint-patty`.
-6. [ ] **HUMAN** — Approve the constitution bump to 1.53.0 when its PR appears (or ask an agent to open it); `version-gate` fails on master until then
+6. [x] **HUMAN** — Approve the constitution bump to 1.53.0 — approved 2026-10-26, landed with PR #20
    - **Why a human:** the bump is a separate PR that needs review and merge.
    - **Done when:** `version-gate` is green on master.
 7. [ ] **AGENT** _(suggestion)_ — Backup job for `config/` to another machine with a tested restore (FR-007); decide `PUID`/`PGID` vs root-owned config files; key-only SSH.

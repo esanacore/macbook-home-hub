@@ -6,6 +6,12 @@ This project follows semantic versioning.
 
 ## Unreleased
 
+### Changed
+
+- Constitution submodule updated 1.52.0 → 1.53.0 (README per-platform
+  instructions and progressive disclosure; documentation standard only, no
+  new checks). Clears the `version-gate` CI failure.
+
 ### Fixed
 
 - **The smoke check now fails when Home Assistant is in recovery mode.**
