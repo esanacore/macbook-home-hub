@@ -9,3 +9,7 @@ frontend:
 automation: !include automations.yaml
 script: !include scripts.yaml
 scene: !include scenes.yaml
+
+# Packages (e.g. packages/firestick_hub.yaml from the firestick-hub repo)
+homeassistant:
+  packages: !include_dir_named packages

@@ -53,6 +53,7 @@ config/known_devices.yaml
 config/ip_bans.yaml
 config/.HA_VERSION
 config/blueprints/
+config/.cache/
 
 # Home Assistant backups (tar archives may contain the full config, secrets
 # included). Keep these off the hub and out of git — see docs/OPERATIONS.md.
