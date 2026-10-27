@@ -6,6 +6,26 @@ This project follows semantic versioning.
 
 ## Unreleased
 
+### Changed
+
+- Constitution submodule updated 1.52.0 → 1.53.0 (README per-platform
+  instructions and progressive disclosure; documentation standard only, no
+  new checks). Clears the `version-gate` CI failure.
+
+### Fixed
+
+- **The smoke check now fails when Home Assistant is in recovery mode.**
+  Recovery mode serves the frontend with HTTP 200, so from 2026-10-15 to
+  2026-10-25 the hub ran broken (`!secret firestick_hub_auth` undefined)
+  while `scripts/smoke_check.sh` and the full suite reported green. On the
+  hub, `smoke_check.sh` now also FAILs if the container's log since its
+  last start contains `Activating recovery mode`, or if
+  `check_config` rejects the configuration on disk (a break that would hit
+  on the next restart). No unauthenticated HA 2026.8.0 endpoint reveals
+  recovery mode, so both checks use `docker` and SKIP off-hub. New
+  blocking unit tests: `scripts/test_smoke_check.sh` (11 cases). Run on the
+  hub on 2026-10-25, the check now reports the real state: FAIL.
+
 ### Added
 
 - **First unattended reboot passed.** After `sudo reboot` on 2026-10-12 the

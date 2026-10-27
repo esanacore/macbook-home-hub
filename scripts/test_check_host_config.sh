@@ -87,6 +87,13 @@ run_case() {
 no_docker_bin="$tmp/bin-nodocker"; mkdir -p "$no_docker_bin"
 for f in busctl systemctl id xfconf-query; do ln -s "$fakebin/$f" "$no_docker_bin/$f"; done
 for f in bash sed grep tr cat; do ln -s "$(command -v $f)" "$no_docker_bin/$f"; done
+# Where no real docker sits in /usr/bin or /bin (Windows Git Bash, a bare CI
+# image) the system dirs can stay on PATH — and must, because a symlinked
+# MSYS bash.exe cannot find its DLLs and exits 127.
+no_docker_path="$no_docker_bin"
+if [ ! -e /usr/bin/docker ] && [ ! -e /bin/docker ]; then
+  no_docker_path="$no_docker_bin:/usr/bin:/bin"
+fi
 
 run_case "all good -> PASSED"                     0 "Host configuration check PASSED"
 run_case "empty ExternalPower inherits ignore"    0 "HandleLidSwitchExternalPower=ignore" FAKE_LID_EXT=
@@ -108,7 +115,7 @@ run_case "xfpm idle timeout set -> FAIL"          1 "xfpm inactivity-on-ac='30'"
 run_case "xfconf unreachable -> SKIP, still PASS" 0 "SKIP  xfce4-power-manager" FAKE_XFCONF_REACHABLE=0
 
 # docker binary absent entirely
-out=$(env -i HOME="$tmp" PATH="$no_docker_bin" "$no_docker_bin/bash" "$checker" 2>&1); rc=$?
+out=$(env -i HOME="$tmp" PATH="$no_docker_path" bash "$checker" 2>&1); rc=$?
 if [ "$rc" -eq 1 ] && grep -qF "docker not installed" <<<"$out"; then
   echo "PASS: docker absent -> FAIL"; pass=$((pass+1))
 else
