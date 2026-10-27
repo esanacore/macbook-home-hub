@@ -26,7 +26,7 @@ The suite is therefore split by what it needs to run:
 | Static | Governance docs, secrets sweep, OTS inventory, env-var contract, architecture, gbrain block staleness, unit tests for both checkers we own | No | Yes (gbrain staleness is advisory — see below) |
 | Configuration | `docker-compose.yml` parses and resolves | Docker only | Yes, once Docker is present |
 | Host config | Live logind lid policy, sleep targets masked, Docker and SSH enabled, XFCE power manager (`scripts/check_host_config.sh`) | Yes — runs only on the `MacBook8,1` (or `HUB_LOCAL=1`) | No (SKIPs) |
-| Smoke (end-to-end) | Host reachable, Home Assistant answering on `:8123`, container running | Yes — the hub | No |
+| Smoke (end-to-end) | Host reachable, Home Assistant answering on `:8123`, container running, **not in recovery mode**, config passes `check_config` | Yes — the hub (the container checks SKIP off-hub) | No |
 
 The host-config and smoke tiers are the only checks that touch the real
 machine. Both **skip** rather than pass when they cannot run (off-hub, or
@@ -53,8 +53,15 @@ follows:
   negative case per check (lid
   suspend, sleep target unmasked, docker absent, compose absent, docker
   service disabled, user not in group, ssh absent, ssh.service-only hosts accepted, XFCE lid/idle set, xfconf
-  unreachable → SKIP). These are the two pieces of logic we own with
-  branch-worthy behavior, so they are the two with unit tests.
+  unreachable → SKIP). `scripts/test_smoke_check.sh` does the same for
+  `scripts/smoke_check.sh` with fake `ping`, `curl` and `docker`: eleven
+  cases covering healthy, **recovery mode while HTTP is 200** (the
+  2026-10-15 → 2026-10-25 regression), config broken but not yet restarted,
+  container logs unreadable and `docker inspect` failing (both FAIL rather
+  than pass on missing evidence), container stopped, no HTTP, ping blocked
+  (WARN only), and docker absent (container checks SKIP). These are the
+  three pieces of logic we own with branch-worthy behavior, so they are the
+  three with unit tests.
 - **Integration tests**: `docker compose config` — does the declared stack
   resolve into something Docker will accept? Command:
   `bash scripts/run_tests.sh` (the compose tier). And
@@ -62,6 +69,34 @@ follows:
   configuration the stack assumes? Runs inside `run_tests.sh` on the hub.
 - **End-to-end tests**: `scripts/smoke_check.sh` — against a running hub.
   Command: `HUB_HOST=<hub-ip> bash scripts/smoke_check.sh`.
+
+### Recovery-mode detection in the smoke check
+
+HTTP 200 on `:8123` does not mean Home Assistant is working. When
+`configuration.yaml` fails to load (a missing `!secret`, a YAML error), HA
+starts a stripped-down **recovery mode** that still serves the frontend with
+HTTP 200. From 2026-10-15 to 2026-10-25 the hub sat in recovery mode while
+the smoke check — then only ping, HTTP and container state — reported PASS.
+
+Checked against HA 2026.8.0 on 2026-10-25 with a throwaway container on the
+hub: no unauthenticated endpoint distinguishes the two states (`/`,
+`/manifest.json`, `/auth/providers`, `/auth/authorize`, `/api/` and
+`/api/onboarding` returned identical bytes once onboarding is complete). So
+detection needs the container, and runs only on the hub (it SKIPs elsewhere,
+like the container-state check):
+
+- **Running state:** `docker logs --since <container StartedAt>` must not
+  contain `Activating recovery mode`. If the logs cannot be read, the check
+  FAILs — absence of evidence is not a pass.
+- **Config on disk:** `docker exec home-assistant python -m homeassistant
+  --script check_config -c /config` must exit 0 (~3.5 s on the hub). This
+  catches a config broken by an edit the running instance has not loaded
+  yet — it would enter recovery mode on the next restart.
+
+Limitation: the log check relies on the `json-file` log driver keeping the
+startup lines. The compose file sets no rotation, so they are retained for
+the container's lifetime; adding `max-size` rotation would need this check
+revisited.
 
 ### gbrain block staleness check
 
@@ -118,6 +153,7 @@ security-sensitive code) at that time.
 | 2026-10-12 (before provisioning) | 2 of 12 executed (unchanged); 3 written but unproven (`FR-001` joins `FR-002`, `FR-004`) | 0 WARN, 0 MISSING | First run **on the hub** (Mint 22.3 installed). `check_host_config.sh` executed and reported FAIL on every root-level item because `provision_host.sh` had not been run yet — recorded as the honest state, not a pass. Nothing promoted. |
 | 2026-10-12 (after provisioning) | 4 of 12 with a passing executed check (4 of 8 `MUST`); `FR-001`'s check executed, failing until reboot | 0 WARN, 0 MISSING | `provision_host.sh` run by the operator; Home Assistant 2026.8.0 pulled and started. Full suite with `HUB_HOST`: 10 PASS, 1 FAIL (host config — logind pending reboot, docker group pending re-login), 0 SKIP. `FR-002` and `FR-004` promoted. |
 | 2026-10-12 (after reboot) | 6 of 12 with a passing executed check (6 of 8 `MUST`) | 0 WARN, 0 MISSING | First unattended reboot. **Full suite with `HUB_HOST`: 11 PASS, 0 FAIL, 0 SKIP** on the hub. `FR-001` (AC-2/3) and `FR-003` promoted. Remaining `MUST` gaps: FR-007 (restore), NFR-002 (power cut), plus the manual residuals of FR-001 and FR-002. |
+| 2026-10-25 | 5 of 12 with a passing executed check (FR-002 now failing on the hub) | 0 WARN, 0 MISSING | Found HA in recovery mode since 2026-10-15 (`!secret firestick_hub_auth` undefined) while the smoke check passed. `smoke_check.sh` hardened to detect recovery mode and run `check_config`; on the hub it now **FAILs** on both, which is the honest state. New blocking unit tests `test_smoke_check.sh` (11 cases). |
 
 A downward trend is a signal to investigate, even when the number stays above
 the floor.
@@ -133,7 +169,7 @@ tests, not on hardware.
 | Gap ID | Area / behavior | Risk | Related requirement | Status | TODO ref |
 | --- | --- | --- | --- | --- | --- |
 | GAP-001 | Host stays reachable with the lid closed. AC-2/AC-3 closed 2026-10-12 — `check_host_config.sh` PASS on the hub after reboot. **Residual: AC-1**, the 30-minute lid-closed SSH test, not yet performed. | High → Medium | FR-001 | Open (AC-1 only) | TODO.md → Provisioning |
-| GAP-002 | Home Assistant answers on `:8123`. | High | FR-002 | **Closed 2026-10-12** — `smoke_check.sh` executed on the hub against `192.168.1.192`: HTTP 302, container running. Residual: AC-1 from a second LAN host (tracked under FR-002 in `TODO.md`). | TODO.md → Services |
+| GAP-002 | Home Assistant answers on `:8123`. | High | FR-002 | **Closed 2026-10-12** — `smoke_check.sh` executed on the hub against `192.168.1.192`: HTTP 302, container running. Residual: AC-1 from a second LAN host (tracked under FR-002 in `TODO.md`). **2026-10-25:** the check was blind to recovery mode (HTTP 200); hardened, and now FAILs on the hub until `firestick_hub_auth` is defined in `config/secrets.yaml`. | TODO.md → Services |
 | GAP-003 | Stack returns automatically after a reboot. | High | FR-003 | **Closed 2026-10-12** — unattended `sudo reboot`; container up 14 s after boot, smoke PASS ~1 min after boot. Unclean power loss is GAP-006. | — |
 | GAP-004 | Compose file validity. | Medium | FR-004 | **Closed 2026-10-12** — compose tier executed on the hub, PASS. | — |
 | GAP-005 | Backup and restore actually round-trip. No backup job exists, so restore has never been exercised. An untested restore is not a backup. | High | FR-007 | Open | TODO.md → Operations |
@@ -152,8 +188,10 @@ Every requirement ID maps to its verifying check in
 `docs/REQUIREMENTS_TRACEABILITY.md`. Requirements with no verifying test are
 gaps and appear in the gap log above.
 
-Current state: 12 requirements, 6 with a passing executed verifying check
-(NFR-001, NFR-004, FR-001, FR-002, FR-003, FR-004). Two of those six keep an
+Current state: 12 requirements, 6 with an executed verifying check
+(NFR-001, NFR-004, FR-001, FR-002, FR-003, FR-004), of which FR-002's is
+**failing on the hub** as of 2026-10-25 (recovery mode — see "Recovery-mode
+detection in the smoke check"). Two of those six keep an
 open gap-log row for a manual criterion their script cannot cover (FR-001's
 lid test, FR-002's second-host check); the other 6 requirements have no
 executed check yet.

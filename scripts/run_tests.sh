@@ -100,6 +100,11 @@ run_check "gbrain: staleness checker unit tests" \
 run_check "host: configuration checker unit tests" \
   bash scripts/test_check_host_config.sh
 
+# The smoke check's unit tests fake ping/curl/docker the same way, including
+# the recovery-mode case that once passed for ten days. Blocking.
+run_check "smoke: smoke check unit tests" \
+  bash scripts/test_smoke_check.sh
+
 # --------------------------------------------------------- compose stack ---
 
 if [ -f compose/docker-compose.yml ]; then
