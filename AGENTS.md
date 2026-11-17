@@ -19,6 +19,7 @@ Read:
 - `TODO.md`
 - `CHANGELOG.md`
 - `docs/MEMORY.md`
+- `docs/sessions/README.md` — the session-log index, newest rows; search the log for the task's topic and read matching summaries on demand
 
 ## Required Work Habits
 
@@ -44,5 +45,6 @@ Read:
 - Update CHANGELOG.md.
 - Perform a security review.
 - Propose new codebase learnings, user preferences, or major decisions to the user and (upon approval) record them in `docs/MEMORY.md`.
+- Consult and extend the session log — before planning, read the newest rows of `docs/sessions/README.md` and search `docs/sessions/` for earlier sessions on the same topic (`bash constitution/scripts/find_sessions.sh <keyword>`), reading the ones that match; before completing non-trivial work, add this session's summary there (request, context, decisions, discoveries, outcome — a summary, never a transcript, and never a secret) and list it in the index (`constitution/AI_WORKFLOW.md`, "Session Summaries").
 - Report tests run and any tests not run.
 - Summarize work clearly.
